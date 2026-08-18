@@ -67,7 +67,3 @@ python code/CK/CK005-alignment-neighbor.py --gen-sub
 - 团队成员：Shu XU、Si-yang LIU、Jiao-nei WU
 
 本项目受 **Hong-xi TAO** 邀请，作为其带领队伍的主力参加。
-
-<div align="center">
-  <p>Light The Sea 🌊 | 点亮蓝海 · 破浪前行</p>
-</div>
