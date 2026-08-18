@@ -1,4 +1,4 @@
-# 🐬 2026 海豚杯：LtSea 团队技术方案
+# 🐬 2026 海豚杯：点燃大海（Light The Sea）团队技术方案
 
 多标签蛋白质功能预测（500 个 GO 类标签，Macro F1 评估）竞赛方案。融合序列组成（kmer 多 k 邻居）、DIAMOND 比对邻居与深度模型概率的四路集成框架。
 
@@ -56,3 +56,18 @@ python code/CK/CK005-alignment-neighbor.py --gen-sub
 
 - 数据、模型权重、中间缓存体积过大未入库，可依工作日志（`doc/工作日志.md`）逐步重建
 - 实验编号体系与运行规则见 `doc/实验规则.md`、`doc/代码索引.md`
+
+---
+
+## 🙏 团队
+
+**点燃大海（Light The Sea）** —— 2026 海豚杯
+
+- 团队负责人：[**Yue-xin GENG**](https://github.com/qyyyy09315)
+- 团队成员：Shu XU、Si-yang LIU、Jiao-nei WU
+
+本项目受 **Hong-xi TAO** 邀请，作为其带领队伍的主力参加。
+
+<div align="center">
+  <p>Light The Sea 🌊 | 点亮蓝海 · 破浪前行</p>
+</div>
