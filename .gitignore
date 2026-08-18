@@ -1,0 +1,27 @@
+# 数据（竞赛官方下发，体积大）
+data/
+
+# 中间结果与缓存（可重建）
+rel/
+submit/
+
+# 预训练模型（体积大）
+models/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.idea/
+.vscode/
+
+# 外部工具（mmseqs2 已弃用，diamond 保留）
+tools/mmseqs2/
+tools/diamond/*.zip
+
+# 临时/训练产物
+catboost_info/
+baseline-v2.ipynb
