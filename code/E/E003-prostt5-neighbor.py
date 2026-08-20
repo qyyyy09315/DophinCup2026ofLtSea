@@ -19,7 +19,9 @@ E003-prostt5-neighbor — ProstT5 结构感知嵌入邻居特征 (短序列子�
 方案:
   - 嵌入: ProstT5 (models/prostt5) encoder mean-pooled 1024-D, 余弦检索
     (<AA2fold> 前缀 + 残基空格分隔, 截断 2000, bfloat16 GPU, 残基预算批处理)
-  - 检索: 短序列 query → 短序列 train 库 top-3 加权聚合 (余弦, FuncSeek 同款)
+  - 检索: 短序列 query → 短序列库 top-3 加权聚合 (余弦, FuncSeek 同款)
+    注意: 本脚本 val 库用了全部 short_tr（含验证集）→ 自匹配泄漏；
+    去泄漏重评见 ECK001a-noleak.py（w_pt5=0，无增益）
   - 评估: 子集独立 F1/AUC、corr(pt5, kmer)、全局混合融合
     (短序列行 = w*pt5 + (1-w)*kmer, 长序列行 = kmer) → CK005 框架
 文献:
@@ -119,22 +121,43 @@ def knn_aggregate(query_emb, db_emb, db_y, top_k):
     return (labels * w[:, :, None]).sum(axis=1) / w.sum(axis=1)[:, None], sims[:, 0]
 
 
-def embed_sequences(model, tokenizer, seqs, dev):
+def embed_sequences(model, tokenizer, seqs, dev, ckpt_path=None):
     """ProstT5 嵌入: <AA2fold> 前缀 + 残基空格分隔, mean-pooled。
 
     按长度分桶 + 每批 token 预算控制 (8GB 显存, 3B bfloat16):
       - 256aa 以下: ~0.1s/条 (快)
       - 256-512aa:  ~1.4s/条 (注意力 O(L²), 计算主导)
       - 512aa 以上: >6s/条 且大 batch 会 OOM, 建议只测短序列
+
+    断点续传 (ckpt_path): 每 CKPT_EVERY 条落盘一次嵌好批次索引集合,
+    恢复时批次边界按同一规则重算 (确定性), 已完成的批直接跳过不重复推理。
+    注意: batch 累积规则对同一 seqs 是确定的, 因此恢复后能精确对齐边界;
+    中断若发生在批内, 该批未写入即未完成, 重启会重新推理, 无丢失。
     """
     MAX_LEN = 2000
     TOKEN_BUDGET = 6000   # 每批 token 上限, 防 OOM (bench 验证)
     BATCH_CAP = 32
+    CKPT_EVERY = 500      # 每处理多少条落盘一次 (30k 条 ≈ 60 次, 开销可忽略)
     lens = np.array([len(s) for s in seqs])
     order = np.argsort(lens)
     emb = np.zeros((len(seqs), 1024), dtype=np.float32)
+
+    # 断点续传: 已嵌好的 order 索引集合
+    done_idx = set()
+    if ckpt_path and os.path.exists(ckpt_path):
+        d = np.load(ckpt_path)
+        emb = d["emb"]
+        done_idx = set(int(x) for x in d["done_idx"].tolist())
+        print(f"  [续传] 已恢复 {len(done_idx)}/{len(seqs)} 条嵌入, 继续剩余...")
+
     pbar = tqdm(total=len(seqs), desc="ProstT5 嵌入")
+    if done_idx:
+        pbar.update(len(done_idx))
     i = 0
+    processed = len(done_idx)
+    last_ckpt_f = 0.0
+    import time as _t
+    last_ckpt_t = _t.time()
     while i < len(seqs):
         j = i
         # 累积到 token 预算或 batch 上限 (桶内按长度排序, padding 浪费最小)
@@ -142,18 +165,33 @@ def embed_sequences(model, tokenizer, seqs, dev):
                and lens[order[j]] * (j - i + 1) <= TOKEN_BUDGET):
             j += 1
         batch_idx = order[i:j]
-        batch = [seqs[k] for k in batch_idx]
-        texts = ["<AA2fold> " + " ".join(list(seq[:MAX_LEN])) for seq in batch]
-        enc = tokenizer(texts, padding="longest", truncation=True,
-                        max_length=MAX_LEN + 2, return_tensors="pt").to(dev)
-        with torch.no_grad():
-            out = model(**enc).last_hidden_state
-        mask = enc["attention_mask"].unsqueeze(-1).float()
-        pooled = (out * mask).sum(1) / mask.sum(1).clamp(min=1)
-        emb[batch_idx] = pooled.cpu().numpy()
+        if any(x not in done_idx for x in batch_idx.tolist()):
+            batch = [seqs[k] for k in batch_idx]
+            texts = ["<AA2fold> " + " ".join(list(seq[:MAX_LEN])) for seq in batch]
+            enc = tokenizer(texts, padding="longest", truncation=True,
+                            max_length=MAX_LEN + 2, return_tensors="pt").to(dev)
+            with torch.no_grad():
+                out = model(**enc).last_hidden_state
+            mask = enc["attention_mask"].unsqueeze(-1).float()
+            pooled = (out * mask).sum(1) / mask.sum(1).clamp(min=1)
+            emb[batch_idx] = pooled.cpu().numpy()
+            done_idx.update(batch_idx.tolist())
+            processed += len(batch)
+            pbar.update(len(batch))
+        else:
+            processed += len(batch_idx)
+            pbar.update(len(batch_idx))
         i = j
-        pbar.update(len(batch))
+        # 断点续传: 每 CKPT_EVERY 条或每 60s 落盘
+        if ckpt_path and (processed - last_ckpt_f >= CKPT_EVERY
+                          or _t.time() - last_ckpt_t > 60):
+            np.savez_compressed(ckpt_path, emb=emb,
+                                done_idx=np.array(sorted(done_idx), dtype=np.int64))
+            last_ckpt_f = processed
+            last_ckpt_t = _t.time()
     pbar.close()
+    if ckpt_path and os.path.exists(ckpt_path):
+        os.remove(ckpt_path)  # 全部完成后删除临时 checkpoint, 主缓存由调用方写
     return emb
 
 
@@ -203,12 +241,14 @@ def main():
         print(f"  嵌入缓存: train {emb_s_tr.shape} / test {emb_s_te.shape}")
     else:
         print(f"[3/6] ProstT5 推理 (短序列子集 {len(short_tr)}+{len(short_te)} 条, 预计 1-2 小时)...")
+        ckpt_tr = f"{REL_DIR}/E003_ckpt_train.npz"
+        ckpt_te = f"{REL_DIR}/E003_ckpt_test.npz"
         seq_s_tr = [seqs[i].replace("U", "X").replace("Z", "X").replace("O", "X")
                     for i in short_tr]
         seq_s_te = [seqs_test[i].replace("U", "X").replace("Z", "X").replace("O", "X")
                     for i in short_te]
-        emb_s_tr = embed_sequences(model, tokenizer, seq_s_tr, dev)
-        emb_s_te = embed_sequences(model, tokenizer, seq_s_te, dev)
+        emb_s_tr = embed_sequences(model, tokenizer, seq_s_tr, dev, ckpt_path=ckpt_tr)
+        emb_s_te = embed_sequences(model, tokenizer, seq_s_te, dev, ckpt_path=ckpt_te)
         np.savez_compressed(EMB_PATH, emb_s_tr=emb_s_tr, emb_s_te=emb_s_te)
         print(f"  嵌入已缓存: {EMB_PATH}")
 
