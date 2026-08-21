@@ -6,9 +6,9 @@ E004-esm2-lora — ESM2-150M + LoRA 参数高效微调多标签分类
   - InterLabelGO+ (Liu et al., Bioinformatics 2024, doi:10.1093/bioinformatics/btae655)
     无同源蛋白靠可训练 PLM 序列模型兜底（本赛 CK005 miss 子集 F1 仅 0.06）
 方案:
-  - ESM2-150M + LoRA r=8 / alpha=16 / q,k,v
-  - 动态 padding（batch 内按真实长度，不整表 pad 到 256）
-  - 默认 15 epoch + 早停 patience=3；默认关闭 gradient checkpointing
+  - ESM2-150M；冻结前 24 层（同 B005a），仅最后 6 层 LoRA r=8 / q,k,v
+    （实测全 30 层前向 1.05s/步 ≈ 100min/ep；冻结前缀后前向约 1/5）
+  - 动态 padding；默认 8 epoch + 早停 patience=2
   - AMP + TF32；验证间隔 2；--resume 续训
 用法:
   python code/E/E004-esm2-lora.py
@@ -25,6 +25,12 @@ import json
 import os
 import sys
 import time
+from itertools import islice
+
+# 必须在 import transformers/peft 之前：禁止把本地目录名当成 HF 仓库去联网
+os.environ["HF_HUB_OFFLINE"] = "1"
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
+os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
 
 import numpy as np
 import pandas as pd
@@ -47,14 +53,15 @@ os.makedirs(MODEL_DIR, exist_ok=True)
 ESM2_PATH = os.path.join(PROJECT_ROOT, "models", "esm2_150m")
 N_LABELS = 500
 MAX_LEN = 256
-N_EPOCHS = 15
+N_EPOCHS = 8
 BATCH = 16
-EVAL_BATCH = 32
+EVAL_BATCH = 16
 LR = 2e-4
-PATIENCE = 3
+PATIENCE = 2
 VALIDATE_EVERY = 2
 LORA_R = 8
 LORA_ALPHA = 16
+FREEZE_FIRST = 24  # ESM2-150M 共 30 层；与 B005a 一致，只训后 6 层
 
 
 def macro_f1(ens, y, t=0.5):
@@ -136,9 +143,19 @@ def load_base():
         num_labels=N_LABELS,
         problem_type="multi_label_classification",
         torch_dtype=torch.float32,
+        local_files_only=True,
     )
     os.chdir(cwd)
     return model
+
+
+def save_adapter(model, path):
+    """离线保存 LoRA，避免 peft 对 base_model_name_or_path 发 HF HEAD。"""
+    os.makedirs(path, exist_ok=True)
+    if hasattr(model, "peft_config"):
+        for cfg in model.peft_config.values():
+            cfg.base_model_name_or_path = ESM2_PATH
+    model.save_pretrained(path, save_embedding_layers=False)
 
 
 @torch.no_grad()
@@ -151,6 +168,8 @@ def predict_probs(model, loader):
         with torch.amp.autocast("cuda"):
             logits = model(input_ids=ids, attention_mask=mask).logits
         out.append(torch.sigmoid(logits.float()).cpu().numpy())
+        del ids, mask, logits
+    torch.cuda.empty_cache()
     return np.concatenate(out)
 
 
@@ -170,6 +189,10 @@ def parse_args():
 
 def main():
     n_epochs, bs, lr, use_ckpt, resume = parse_args()
+    freeze_first = FREEZE_FIRST
+    for a in sys.argv[1:]:
+        if a.startswith("--freeze="):
+            freeze_first = int(a.split("=", 1)[1])
     if torch.cuda.is_available():
         torch.backends.cuda.matmul.allow_tf32 = True
         torch.backends.cudnn.allow_tf32 = True
@@ -177,8 +200,8 @@ def main():
 
     t0 = time.time()
     print("=" * 60)
-    print(f"E004 LoRA-ESM2: epochs={n_epochs} bs={bs} lr={lr} ckpt={use_ckpt} resume={resume}")
-    print(f"  加速: 动态padding / 早停 patience={PATIENCE} / 验证每{VALIDATE_EVERY}ep / TF32"
+    print(f"E004 LoRA-ESM2: epochs={n_epochs} bs={bs} lr={lr} freeze={freeze_first}/30 ckpt={use_ckpt} resume={resume}")
+    print(f"  加速: 冻结前{freeze_first}层 / 动态padding / 早停 patience={PATIENCE} / 验证每{VALIDATE_EVERY}ep / TF32"
           f"{' / gradient-ckpt' if use_ckpt else ' / 无ckpt'}")
 
     print("[1/4] 加载数据...")
@@ -212,10 +235,18 @@ def main():
                            collate_fn=collate_dyn, pin_memory=True)
     te_loader = DataLoader(te_ds, batch_size=EVAL_BATCH, shuffle=False, num_workers=0,
                            collate_fn=collate_dyn, pin_memory=True)
-    print(f"  步/epoch={len(tr_loader)}  预估: 无ckpt ~8-12min/ep, 有ckpt ~12-18min/ep")
+    print(f"  步/epoch={len(tr_loader)}  预估: 冻前{freeze_first}层 ~15-25min/ep（全层实测 ~100min/ep）")
 
     print("[2/4] 加载 ESM2-150M + LoRA...")
     base = load_base()
+    n_layers = len(base.esm.encoder.layer)
+    freeze_first = min(freeze_first, n_layers)
+    for i, layer in enumerate(base.esm.encoder.layer):
+        if i < freeze_first:
+            layer.requires_grad_(False)
+    if freeze_first > 0:
+        base.esm.embeddings.requires_grad_(False)
+    print(f"  冻结 encoder.layer[0:{freeze_first}] + embeddings（共 {n_layers} 层）")
     if use_ckpt:
         base.gradient_checkpointing_enable()
         if hasattr(base, "config"):
@@ -223,10 +254,12 @@ def main():
     print(f"  基模型参数量: {sum(p.numel() for p in base.parameters()) / 1e6:.1f}M")
     lora_config = LoraConfig(
         task_type=TaskType.SEQ_CLS, r=LORA_R, lora_alpha=LORA_ALPHA,
-        lora_dropout=0.1, target_modules=["query", "key", "value"], bias="none")
+        lora_dropout=0.1, target_modules=["query", "key", "value"], bias="none",
+        layers_to_transform=list(range(freeze_first, n_layers)),
+        modules_to_save=["classifier"])
     model = get_peft_model(base, lora_config)
     n_trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print(f"  LoRA 可训练: {n_trainable / 1e6:.2f}M")
+    print(f"  可训练: {n_trainable / 1e6:.2f}M（LoRA 仅后 {n_layers - freeze_first} 层 + 分类头）")
     model = model.cuda()
 
     print(f"[3/4] 训练 {n_epochs} epoch...")
@@ -241,66 +274,120 @@ def main():
 
     best_f1 = -1.0
     start_ep = 0
+    start_step = 0
     bad = 0
     meta_path = os.path.join(MODEL_DIR, "train_meta.json")
-    if resume and os.path.isdir(f"{MODEL_DIR}/best"):
+    resume_dir = f"{MODEL_DIR}/best" if os.path.isdir(f"{MODEL_DIR}/best") else (
+        f"{MODEL_DIR}/last" if os.path.isdir(f"{MODEL_DIR}/last") else None)
+    if resume and resume_dir:
         from peft import PeftModel as _PM
         base2 = load_base()
+        for i, layer in enumerate(base2.esm.encoder.layer):
+            if i < freeze_first:
+                layer.requires_grad_(False)
+        if freeze_first > 0:
+            base2.esm.embeddings.requires_grad_(False)
         if use_ckpt:
             base2.gradient_checkpointing_enable()
-        model = _PM.from_pretrained(base2, f"{MODEL_DIR}/best").cuda()
+        model = _PM.from_pretrained(
+            base2, resume_dir, is_trainable=True, local_files_only=True).cuda()
+        model.train()
+        n_tr = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        print(f"    resume trainable params: {n_tr / 1e6:.2f}M")
         if os.path.exists(meta_path):
             meta = json.load(open(meta_path, encoding="utf-8"))
             best_f1 = float(meta.get("best_f1", -1))
-            start_ep = int(meta.get("best_epoch", 0))
-        print(f"  resume: best_f1={best_f1:.4f} from epoch {start_ep}")
-
-    for ep in range(start_ep, n_epochs):
-        model.train()
-        total_loss = 0.0
-        t_ep = time.time()
-        for ids, mask, y in tqdm(tr_loader, desc=f"ep{ep + 1}", leave=False):
-            ids = ids.cuda(non_blocking=True)
-            mask = mask.cuda(non_blocking=True)
-            y = y.cuda(non_blocking=True)
-            opt.zero_grad(set_to_none=True)
-            with torch.amp.autocast("cuda"):
-                logits = model(input_ids=ids, attention_mask=mask).logits
-                loss = bce(logits, y)
-            scaler.scale(loss).backward()
-            scaler.unscale_(opt)
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-            scaler.step(opt)
-            scaler.update()
+            start_ep = int(meta.get("last_epoch", 0))
+            start_step = int(meta.get("last_step", 0))
+        print(f"  resume from {resume_dir}: best_f1={best_f1:.4f} ep{start_ep + 1} step>{start_step}")
+        opt = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad],
+                                lr=lr, weight_decay=0.01)
+        n_steps = max(1, len(tr_loader) * n_epochs)
+        warmup = max(1, int(n_steps * 0.06))
+        sched = torch.optim.lr_scheduler.LambdaLR(
+            opt, lambda s: min((s + 1) / warmup, 0.5 * (1 + np.cos(np.pi * s / n_steps))))
+        done = start_ep * len(tr_loader) + start_step
+        for _ in range(done):
             sched.step()
-            total_loss += loss.item() * ids.size(0)
-        dt = time.time() - t_ep
-        do_val = ((ep + 1) % VALIDATE_EVERY == 0) or (ep == n_epochs - 1) or (ep < 2)
-        msg = f"  ep{ep + 1}: loss={total_loss / len(tr_ds):.4f} {dt:.0f}s ({len(tr_ds) / dt:.1f} seq/s)"
-        if do_val:
-            f1 = macro_f1(predict_probs(model, va_loader), y_val, 0.5)
-            msg += f" F1(0.5)={f1:.4f}"
-            print(msg, flush=True)
-            if f1 > best_f1 + 1e-4:
-                best_f1 = f1
-                bad = 0
-                model.save_pretrained(f"{MODEL_DIR}/best")
-                with open(meta_path, "w", encoding="utf-8") as f:
-                    json.dump({"best_f1": best_f1, "best_epoch": ep + 1}, f)
-                print(f"    保存 best F1={best_f1:.4f}", flush=True)
+        print(f"    scheduler fast-forward {done} steps")
+
+    last_ckpt = os.path.join(MODEL_DIR, "last")
+    try:
+        for ep in range(start_ep, n_epochs):
+            model.train()
+            total_loss = 0.0
+            t_ep = time.time()
+            skip = start_step if ep == start_ep else 0
+            it = tr_loader
+            if skip:
+                print(f"    skip first {skip} steps of ep{ep + 1} (order not identical after crash)", flush=True)
+                it = islice(tr_loader, skip, None)
+            for step, (ids, mask, y) in enumerate(tqdm(it, desc=f"ep{ep + 1}",
+                                                       initial=skip, total=len(tr_loader), leave=False),
+                                                 start=skip):
+                ids = ids.cuda(non_blocking=True)
+                mask = mask.cuda(non_blocking=True)
+                y = y.cuda(non_blocking=True)
+                opt.zero_grad(set_to_none=True)
+                with torch.amp.autocast("cuda"):
+                    logits = model(input_ids=ids, attention_mask=mask).logits
+                    loss = bce(logits, y)
+                if not loss.requires_grad:
+                    raise RuntimeError("loss 无梯度：adapter 可能以推理模式加载，检查 is_trainable=True")
+                scaler.scale(loss).backward()
+                scaler.unscale_(opt)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                scaler.step(opt)
+                scaler.update()
+                sched.step()
+                total_loss += loss.item() * ids.size(0)
+                if (step + 1) % 1000 == 0:
+                    torch.cuda.empty_cache()
+                    save_adapter(model, last_ckpt)
+                    with open(meta_path, "w", encoding="utf-8") as f:
+                        json.dump({"best_f1": best_f1, "best_epoch": ep,
+                                   "last_epoch": ep, "last_step": step + 1}, f)
+                    print(f"    ckpt step {step + 1}", flush=True)
+                    torch.cuda.empty_cache()
+            dt = time.time() - t_ep
+            save_adapter(model, last_ckpt)
+            do_val = ((ep + 1) % VALIDATE_EVERY == 0) or (ep == n_epochs - 1) or (ep < 2)
+            msg = f"  ep{ep + 1}: loss={total_loss / len(tr_ds):.4f} {dt:.0f}s ({len(tr_ds) / dt:.1f} seq/s)"
+            if do_val:
+                torch.cuda.empty_cache()
+                f1 = macro_f1(predict_probs(model, va_loader), y_val, 0.5)
+                msg += f" F1(0.5)={f1:.4f}"
+                print(msg, flush=True)
+                if f1 > best_f1 + 1e-4:
+                    best_f1 = f1
+                    bad = 0
+                    save_adapter(model, f"{MODEL_DIR}/best")
+                    with open(meta_path, "w", encoding="utf-8") as f:
+                        json.dump({"best_f1": best_f1, "best_epoch": ep + 1}, f)
+                    print(f"    保存 best F1={best_f1:.4f}", flush=True)
+                else:
+                    bad += 1
+                    if bad >= PATIENCE:
+                        print(f"    早停 (patience={PATIENCE})", flush=True)
+                        break
             else:
-                bad += 1
-                if bad >= PATIENCE:
-                    print(f"    早停 (patience={PATIENCE})", flush=True)
-                    break
-        else:
-            print(msg, flush=True)
+                print(msg, flush=True)
+            start_step = 0
+    except Exception:
+        import traceback
+        traceback.print_exc()
+        try:
+            save_adapter(model, last_ckpt)
+            print(f"  异常退出已保存 {last_ckpt}，可用 --resume 续训", flush=True)
+        except Exception:
+            pass
+        raise
 
     print("[4/4] 评估 + 生成 test probs...")
     if not os.path.isdir(f"{MODEL_DIR}/best"):
-        model.save_pretrained(f"{MODEL_DIR}/best")
+        save_adapter(model, f"{MODEL_DIR}/best")
     base = load_base()
-    model = PeftModel.from_pretrained(base, f"{MODEL_DIR}/best").cuda()
+    model = PeftModel.from_pretrained(base, f"{MODEL_DIR}/best", local_files_only=True).cuda()
     probs_val = predict_probs(model, va_loader)
     probs_test = predict_probs(model, te_loader)
     np.savez_compressed(f"{REL_DIR}/E004_lora_test_probs.npz", val=probs_val, test=probs_test)
