@@ -4,12 +4,12 @@
 
 ## 当前最佳
 
-提交最高仍是 **CK005 = 44.8375**。本地验证新最佳 **CK005a = 0.4399**（`--very-sensitive`，尚未交平台）。ECK001 本地 0.4558 为 val 自匹配泄漏，提交 43.24 作废。
+提交最高 **CK005a = 45.3039**（提交 AUC 0.7154）。本地验证同为 CK005a **0.4399**。ECK001 本地 0.4558 为 val 自匹配泄漏，提交 43.24 作废。
 
 | 实验 | 方法 | Val F1 | 提交 |
 | --- | --- | --- | --- |
-| CK005a | DIAMOND `--very-sensitive` e=0.001 + kmer 多 k | **0.4399** | — |
-| CK005 | DIAMOND 默认敏感度 e=0.001 + kmer 多 k | 0.4359 | **44.8375** |
+| CK005a | DIAMOND `--very-sensitive` e=0.001 + kmer 多 k | **0.4399** | **45.3039** |
+| CK005 | DIAMOND 默认敏感度 e=0.001 + kmer 多 k | 0.4359 | 44.8375 |
 | CK004a | kmer 多 k（k6 主导）+ top5 sim² 聚合 | 0.4308 | — |
 | CK004 | kmer 多 k 融合 | 0.4295 | — |
 | TCK002a | T001a + T002 + CNN + sim 四路集成 | 0.4236 | 43.7276 |
@@ -28,7 +28,7 @@
 │   ├── I/                # 分类器对照（已关闭）
 │   └── E/                # 嵌入方向（ESM2/ProstT5 实验）
 ├── data/                 # 竞赛数据（train.csv / test.csv，未上传）
-├── doc/                  # 工作日志 / 实验规则 / 代码索引
+├── doc/                  # 日志（实验/文献/参考文献）/ 实验规则 / 代码索引
 ├── rel/                  # 中间结果与缓存（npz，未上传）
 ├── submit/               # 提交文件（未上传）
 ├── tools/                # 外部工具（DIAMOND）
@@ -43,7 +43,7 @@ pip install -r requirements.txt   # 依赖见各脚本 import
 
 # 数据：将竞赛 train.csv / test.csv 放入 data/
 
-# 运行最佳集成（需先有 rel/ 中的邻居缓存与单模型概率，见工作日志）
+# 运行最佳集成（需先有 rel/ 中的邻居缓存与单模型概率，见 doc/日志/）
 python code/CK/CK005-alignment-neighbor.py --gen-sub
 ```
 
@@ -57,7 +57,7 @@ python code/CK/CK005-alignment-neighbor.py --gen-sub
 
 ## 备注
 
-- 数据、模型权重、中间缓存体积过大未入库，可依工作日志（`doc/工作日志.md`）逐步重建
+- 数据、模型权重、中间缓存体积过大未入库，可依 `doc/日志/`（入口 `doc/日志/README.md`）逐步重建
 - 实验编号体系与运行规则见 `doc/实验规则.md`、`doc/代码索引.md`
 
 ---
