@@ -1,5 +1,5 @@
 """
-CK005e-rcut — 样本级标签基数校正（RCut / 补满）
+I006-rcut — 样本级标签基数校正（RCut / 补满）
 ================================================================
 依据:
   - Yang Y, SIGIR 2001, doi:10.1145/383952.383975
@@ -13,9 +13,9 @@ CK005e-rcut — 样本级标签基数校正（RCut / 补满）
   k_hat 网格：真基数上界（oracle）/ 线性(ens_sum,len) / 固定倍数。
   主指标: 全局 F1 不掉 + miss F1。
 用法:
-  python code/CK/CK005e-rcut.py
+  python code/I/I006-rcut.py
 输出:
-  rel/CK005e_report.json
+  rel/I006_report.json
 """
 
 import json
@@ -33,7 +33,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 REL_DIR = os.path.join(PROJECT_ROOT, "rel")
 CK005A_TMP = os.path.join(REL_DIR, "ck005a_tmp")
-REPORT_PATH = os.path.join(REL_DIR, "CK005e_report.json")
+REPORT_PATH = os.path.join(REL_DIR, "I006_report.json")
 TCK002_CONFIG = os.path.join(PROJECT_ROOT, "models", "tck002-ensemble.json")
 
 N_LABELS = 500
@@ -187,7 +187,7 @@ def fill_from_scut(ens, scut, k_hat):
 def main():
     t0 = time.time()
     print("=" * 60)
-    print("CK005e: 样本级基数校正（RCut / SCut+补满）")
+    print("I006: 样本级基数校正（RCut / SCut+补满）")
 
     train_df = pd.read_csv(os.path.join(DATA_DIR, "train.csv"))
     label_cols = [c for c in train_df.columns if c.startswith("label_")]

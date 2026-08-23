@@ -1,5 +1,5 @@
 """
-CK005c-length-gate — 短序列上抬 CNN、压 sim（ProteInfer 式互补）
+I005-length-gate — 短序列上抬 CNN、压 sim（ProteInfer 式互补）
 ================================================================
 依据:
   - ProteInfer (Sanderson, Bileschi, Belanger & Colwell, eLife 2023,
@@ -13,9 +13,9 @@ CK005c-length-gate — 短序列上抬 CNN、压 sim（ProteInfer 式互补）
   网格 L ∈ {128, 256, 400} × s_short ∈ {0.0, 0.25, 0.5, 0.75}。
   主指标: 全局 F1 不掉 + 短序列/miss F1 升。
 用法:
-  python code/CK/CK005c-length-gate.py
+  python code/I/I005-length-gate.py
 输出:
-  rel/CK005c_report.json
+  rel/I005_report.json
 """
 
 import json
@@ -32,7 +32,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 REL_DIR = os.path.join(PROJECT_ROOT, "rel")
 CK005A_TMP = os.path.join(REL_DIR, "ck005a_tmp")
-REPORT_PATH = os.path.join(REL_DIR, "CK005c_report.json")
+REPORT_PATH = os.path.join(REL_DIR, "I005_report.json")
 TCK002_CONFIG = os.path.join(PROJECT_ROOT, "models", "tck002-ensemble.json")
 
 N_LABELS = 500
@@ -165,7 +165,7 @@ def search_t(ens, y):
 def main():
     t0 = time.time()
     print("=" * 60)
-    print("CK005c: 短序列抬 CNN / 压 sim（ProteInfer 互补）")
+    print("I005: 短序列抬 CNN / 压 sim（ProteInfer 互补）")
 
     train_df = pd.read_csv(os.path.join(DATA_DIR, "train.csv"))
     label_cols = [c for c in train_df.columns if c.startswith("label_")]

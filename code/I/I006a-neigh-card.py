@@ -1,9 +1,9 @@
 """
-CK005f-neigh-card — hit 用 DIAMOND 邻居标签数当每样本 k
+I006a-neigh-card — hit 用 DIAMOND 邻居标签数当每样本 k
 ================================================================
 依据:
   - Yang Y, SIGIR 2001, doi:10.1145/383952.383975
-    SCut（逐标签）vs RCut（每样本 top-k）。CK005e oracle RCut 全局 0.5245，
+    SCut（逐标签）vs RCut（每样本 top-k）。I006 oracle RCut 全局 0.5245，
     说明排序够、缺的是 k。线性估 k 失败（hold MAE=15）。
   - Ghawi & Pfeffer, iiWAS 2021, doi:10.1145/3487664.3487702
     RCut+PCut 混合阈值。
@@ -17,11 +17,11 @@ CK005f-neigh-card — hit 用 DIAMOND 邻居标签数当每样本 k
   网格：rcut_hit / fill_hit / union(SCut, RCut_hit) × scale∈{0.8,1.0,1.2}。
   miss 行一律保持 SCut。主指标：全局 F1 不掉。
 用法:
-  python code/CK/CK005f-neigh-card.py
-  python code/CK/CK005f-neigh-card.py --gen-sub
+  python code/I/I006a-neigh-card.py
+  python code/I/I006a-neigh-card.py --gen-sub
 输出:
-  rel/CK005f_report.json
-  submit/submission_CK005f_ensemble.csv（仅 --gen-sub 且有效）
+  rel/I006a_report.json
+  submit/submission_I006a_ensemble.csv（仅 --gen-sub 且有效）
 """
 
 import json
@@ -40,7 +40,7 @@ DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 REL_DIR = os.path.join(PROJECT_ROOT, "rel")
 SUB_DIR = os.path.join(PROJECT_ROOT, "submit")
 CK005A_TMP = os.path.join(REL_DIR, "ck005a_tmp")
-REPORT_PATH = os.path.join(REL_DIR, "CK005f_report.json")
+REPORT_PATH = os.path.join(REL_DIR, "I006a_report.json")
 TCK002_CONFIG = os.path.join(PROJECT_ROOT, "models", "tck002-ensemble.json")
 
 N_LABELS = 500
@@ -269,7 +269,7 @@ def main():
     gen_sub = "--gen-sub" in sys.argv
     t0 = time.time()
     print("=" * 60)
-    print("CK005f: hit 邻居标签数当 k（miss 保持 SCut）")
+    print("I006a: hit 邻居标签数当 k（miss 保持 SCut）")
 
     train_df = pd.read_csv(os.path.join(DATA_DIR, "train.csv"))
     test_df = pd.read_csv(os.path.join(DATA_DIR, "test.csv"))
@@ -392,7 +392,7 @@ def main():
     os.makedirs(SUB_DIR, exist_ok=True)
     sub = pd.concat([test_df[["protein_id"]],
                      pd.DataFrame(pred_t, columns=label_cols)], axis=1)
-    sub_path = os.path.join(SUB_DIR, "submission_CK005f_ensemble.csv")
+    sub_path = os.path.join(SUB_DIR, "submission_I006a_ensemble.csv")
     sub.to_csv(sub_path, index=False)
     report["submission"] = sub_path
     with open(REPORT_PATH, "w", encoding="utf-8") as f:

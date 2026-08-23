@@ -1,5 +1,5 @@
 """
-CK005g-weight-scan — CK005a 融合权重 / 聚合余量扫描
+CK005c-weight-scan — CK005a 融合权重 / 聚合余量扫描
 ================================================================
 依据:
   - DeepGOPlus (Kulmanov & Hoehndorf, Bioinformatics 2019,
@@ -15,11 +15,11 @@ CK005g-weight-scan — CK005a 融合权重 / 聚合余量扫描
     3) k-mer 内部权 10 组（k6 主导 / 等权 / 高低 k 平移）
     4) 比对聚合 top-3/5 × bitscore / bitscore²
 用法:
-  python code/CK/CK005g-weight-scan.py
-  python code/CK/CK005g-weight-scan.py --gen-sub   # 按最优 bit_top5 出提交
+  python code/CK/CK005c-weight-scan.py
+  python code/CK/CK005c-weight-scan.py --gen-sub   # 按最优 bit_top5 出提交
 输出:
-  rel/CK005g_report.json
-  submit/submission_CK005g_ensemble.csv（--gen-sub）
+  rel/CK005c_report.json
+  submit/submission_CK005c_ensemble.csv（--gen-sub）
 """
 
 import json
@@ -37,7 +37,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 REL_DIR = os.path.join(PROJECT_ROOT, "rel")
 CK005A_TMP = os.path.join(REL_DIR, "ck005a_tmp")
-REPORT_PATH = os.path.join(REL_DIR, "CK005g_report.json")
+REPORT_PATH = os.path.join(REL_DIR, "CK005c_report.json")
 TCK002_CONFIG = os.path.join(PROJECT_ROOT, "models", "tck002-ensemble.json")
 
 N_LABELS = 500
@@ -211,7 +211,7 @@ def main():
     gen_sub = "--gen-sub" in sys.argv
     t0 = time.time()
     print("=" * 60)
-    print("CK005g: CK005a 融合权重 / 聚合余量扫描")
+    print("CK005c: CK005a 融合权重 / 聚合余量扫描")
 
     train_df = pd.read_csv(os.path.join(DATA_DIR, "train.csv"))
     label_cols = [c for c in train_df.columns if c.startswith("label_")]
@@ -403,7 +403,7 @@ def main():
         best_t = search_t(ens_val, y_val)
         y_pred = (ens_t >= best_t[None, :]).astype(np.int8)
         os.makedirs(os.path.join(PROJECT_ROOT, "submit"), exist_ok=True)
-        sub_path = os.path.join(PROJECT_ROOT, "submit", "submission_CK005g_ensemble.csv")
+        sub_path = os.path.join(PROJECT_ROOT, "submit", "submission_CK005c_ensemble.csv")
         sub = pd.concat([test_df[["protein_id"]],
                          pd.DataFrame(y_pred, columns=label_cols)], axis=1)
         sub.to_csv(sub_path, index=False)

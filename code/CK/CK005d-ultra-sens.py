@@ -1,5 +1,5 @@
 """
-CK005k-ultra-sens — DIAMOND more/ultra-sensitive 与 iterate
+CK005d-ultra-sens — DIAMOND more/ultra-sensitive 与 iterate
 ================================================================
 依据:
   Zhang & Freddolino, bioRxiv 2023, doi:10.1101/2023.11.14.567021
@@ -7,20 +7,20 @@ CK005k-ultra-sens — DIAMOND more/ultra-sensitive 与 iterate
   default / sensitive / very-sensitive × e∈{0.001,0.01,0.1}，
   最优 very-sensitive e=0.001（平台 45.3039）。
   2.1.11 还有 --more-sensitive / --ultra-sensitive / --iterate，
-  改的是命中集合，不是融合权重（CK005g 已关）。
+  改的是命中集合，不是融合权重（CK005c 已关）。
 方案:
   复用 CK005 fasta/dmnd 与 CK005a 评估。e 固定 0.001（CK005a 放宽 e 有害）。
   网格: more-sensitive / ultra-sensitive / iterate
   基线: 已有 very-sensitive e=0.001 tsv，不重搜。
   主指标: 全局 100 档 Macro F1，门槛较 CK005a +0.001。
 用法:
-  python code/CK/CK005k-ultra-sens.py
-  python code/CK/CK005k-ultra-sens.py --skip-search
-  python code/CK/CK005k-ultra-sens.py --gen-sub
+  python code/CK/CK005d-ultra-sens.py
+  python code/CK/CK005d-ultra-sens.py --skip-search
+  python code/CK/CK005d-ultra-sens.py --gen-sub
 输出:
-  rel/CK005k_report.json
-  rel/ck005k_tmp/align_val_*.tsv
-  submit/submission_CK005k_ensemble.csv（仅 --gen-sub 且有效）
+  rel/CK005d_report.json
+  rel/ck005d_tmp/align_val_*.tsv
+  submit/submission_CK005d_ensemble.csv（仅 --gen-sub 且有效）
 """
 
 import importlib.util
@@ -43,8 +43,8 @@ DATA_DIR = a.DATA_DIR
 REL_DIR = a.REL_DIR
 SUB_DIR = a.SUB_DIR
 CK005_TMP = a.CK005_TMP
-TMP_DIR = os.path.join(REL_DIR, "ck005k_tmp")
-REPORT_PATH = os.path.join(REL_DIR, "CK005k_report.json")
+TMP_DIR = os.path.join(REL_DIR, "ck005d_tmp")
+REPORT_PATH = os.path.join(REL_DIR, "CK005d_report.json")
 TRAIN_PATH = a.TRAIN_PATH
 TEST_PATH = a.TEST_PATH
 TCK002_CONFIG_PATH = a.TCK002_CONFIG_PATH
@@ -103,7 +103,7 @@ def main():
     t0 = time.time()
     os.makedirs(TMP_DIR, exist_ok=True)
     print("=" * 60)
-    print("CK005k: DIAMOND more/ultra-sensitive / iterate（e=0.001）")
+    print("CK005d: DIAMOND more/ultra-sensitive / iterate（e=0.001）")
 
     train_df = pd.read_csv(TRAIN_PATH)
     test_df = pd.read_csv(TEST_PATH)
@@ -215,7 +215,7 @@ def main():
         os.makedirs(SUB_DIR, exist_ok=True)
         sub = pd.concat([test_df[["protein_id"]],
                          pd.DataFrame(y_pred, columns=label_cols)], axis=1)
-        sub_path = os.path.join(SUB_DIR, "submission_CK005k_ensemble.csv")
+        sub_path = os.path.join(SUB_DIR, "submission_CK005d_ensemble.csv")
         sub.to_csv(sub_path, index=False)
         report["submission"] = sub_path
         print(f"  提交: {sub_path} ({len(sub)} 行)")

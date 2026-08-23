@@ -1,5 +1,5 @@
 """
-CK005d-pseaac — Chou 伪氨基酸组成接到 CK005a 四路
+ECK006-pseaac — Chou 伪氨基酸组成接到 CK005a 四路
 ================================================================
 依据:
   - Chou KC, Proteins 2001, doi:10.1002/prot.1035
@@ -12,9 +12,9 @@ CK005d-pseaac — Chou 伪氨基酸组成接到 CK005a 四路
   （JTT 标准化 Kyte–Doolittle / Hopp–Woods）。线性头在 train 上拟合 500 标签，
   概率作为第五路，网格扫 w_pse。主指标：全局 F1 不掉。
 用法:
-  python code/CK/CK005d-pseaac.py
+  python code/E/ECK006-pseaac.py
 输出:
-  rel/CK005d_report.json
+  rel/ECK006_report.json
 """
 
 import json
@@ -33,7 +33,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 REL_DIR = os.path.join(PROJECT_ROOT, "rel")
 CK005A_TMP = os.path.join(REL_DIR, "ck005a_tmp")
-REPORT_PATH = os.path.join(REL_DIR, "CK005d_report.json")
+REPORT_PATH = os.path.join(REL_DIR, "ECK006_report.json")
 TCK002_CONFIG = os.path.join(PROJECT_ROOT, "models", "tck002-ensemble.json")
 
 N_LABELS = 500
@@ -221,7 +221,7 @@ def extract_pseaac(seqs, hydro, phil):
 def main():
     t0 = time.time()
     print("=" * 60)
-    print(f"CK005d: Chou Type-I PseAAC λ={LAMBDA} 接到 CK005a")
+    print(f"ECK006: Chou Type-I PseAAC λ={LAMBDA} 接到 CK005a")
 
     train_df = pd.read_csv(os.path.join(DATA_DIR, "train.csv"))
     label_cols = [c for c in train_df.columns if c.startswith("label_")]

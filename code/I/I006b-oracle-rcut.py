@@ -1,10 +1,10 @@
 """
-CK005h-oracle-rcut — oracle RCut 上界分解
+I006b-oracle-rcut — oracle RCut 上界分解
 ================================================================
 依据:
   - Yang Y, SIGIR 2001, doi:10.1145/383952.383975
     SCut（逐标签）vs RCut（每样本 top-k）。
-  - CK005e：真 k 的 RCut-oracle 全局 F1 0.5245 / missF1 0.1986；
+  - I006：真 k 的 RCut-oracle 全局 F1 0.5245 / missF1 0.1986；
     实务 k 估不准（线性 MAE=15，邻居 MAE=17）。只报了单点上界。
 方案:
   复用 CK005a 四路分数。k 一律用验证集真基数（oracle，非提交）。
@@ -15,9 +15,9 @@ CK005h-oracle-rcut — oracle RCut 上界分解
     4) 排序诊断：top-k 捕获率、真标签落入 top-k 的比例；
        按长度 / 真基数分层
 用法:
-  python code/CK/CK005h-oracle-rcut.py
+  python code/I/I006b-oracle-rcut.py
 输出:
-  rel/CK005h_report.json
+  rel/I006b_report.json
 """
 
 import json
@@ -34,7 +34,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 REL_DIR = os.path.join(PROJECT_ROOT, "rel")
 CK005A_TMP = os.path.join(REL_DIR, "ck005a_tmp")
-REPORT_PATH = os.path.join(REL_DIR, "CK005h_report.json")
+REPORT_PATH = os.path.join(REL_DIR, "I006b_report.json")
 TCK002_CONFIG = os.path.join(PROJECT_ROOT, "models", "tck002-ensemble.json")
 
 N_LABELS = 500
@@ -233,7 +233,7 @@ def bin_f1(pred, y, mask):
 def main():
     t0 = time.time()
     print("=" * 60)
-    print("CK005h: oracle RCut 上界分解（真 k，非提交）")
+    print("I006b: oracle RCut 上界分解（真 k，非提交）")
 
     train_df = pd.read_csv(os.path.join(DATA_DIR, "train.csv"))
     label_cols = [c for c in train_df.columns if c.startswith("label_")]
@@ -390,7 +390,7 @@ def main():
         "ranking": ranking,
         "strata": by_bin,
         "useful": False,
-        "note": "oracle 用验证真 k，非提交；分解 CK005e 单点上界",
+        "note": "oracle 用验证真 k，非提交；分解 I006 单点上界",
         "seconds": round(time.time() - t0, 1),
     }
     with open(REPORT_PATH, "w", encoding="utf-8") as f:

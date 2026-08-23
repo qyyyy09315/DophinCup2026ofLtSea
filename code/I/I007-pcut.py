@@ -1,28 +1,26 @@
 """
-CK005j-gated-clip — 门控后再截 hit 过预测
+I007-pcut — 实例分位数截断（不估 k）
 ================================================================
 依据:
-  - Yang Y, SIGIR 2001, doi:10.1145/383952.383975（SCut vs 截断）
-  - CK005h：RCut-oracle 0.5245 几乎全在 hit 截断；hit 里仅 57% 真的多报，
-    一刀切会误伤另外 43%。
-  - CK005e/f/i：估 k / 分位截断均未过 +0.001。
+  - Yang Y, SIGIR 2001, doi:10.1145/383952.383975
+    PCut：按比例/分位截断，不是回归每样本基数。
+  - I006/I006a：k 回归 MAE≈15，邻居 MAE≈17，RCut 实务失败。
+  - I006b：0.52 上界几乎全在 hit 截断；真 k±1 才保住，估 k 路封死。
 方案:
-  复用 CK005a 分数 + SCut。不回归 k。
-  目标 g=1[SCut个数 > 真基数]（只在 hit 上有意义）。
-  特征：SCut 基数、ens 和、log 长度、n(score≥0.4/0.5/0.6)、行 p70/p80 分位、
-        行 max、hit 标记。
-  半折 LogisticRegression 学 P(g=1)，另一折评估（再对调平均）。
-  对 P≥τ 的 hit 行做截断：
-    clip_ratio：保留 SCut 中分数最高的 round(n_scut × r) 个
-    clip_p：SCut ∧ (score ≥ 该行 q_p)
-  τ ∈ {0.5,0.6,0.7,0.8} × r ∈ {0.7,0.8,0.85} / p ∈ {0.70,0.80}
-  对照：无门控、全 hit 截（应差于门控若门控有用）。
-  主指标全局 F1，门槛 +0.001。
+  复用 CK005a 四路分数 + SCut。不预测 k。
+  对每条样本用自身分数的分位数 τ 做截断，再与 SCut 组合：
+    - intersect：SCut ∧ (score ≥ 该行 q_p)
+    - replace：只保留 score ≥ 该行 q_p（至少 1 个）
+    - hit_only：只改 hit 行（I006b 增益来源）
+  p ∈ {0.50, 0.60, 0.70, 0.80, 0.90, 0.95}
+  对照：全局固定分数阈（非分位）× {hit, all}
+  主指标：全局 100 档口径 Macro F1，门槛 +0.001。
 用法:
-  python code/CK/CK005j-gated-clip.py
-  python code/CK/CK005j-gated-clip.py --gen-sub
+  python code/I/I007-pcut.py
+  python code/I/I007-pcut.py --gen-sub   # 仅有效时
 输出:
-  rel/CK005j_report.json
+  rel/I007_report.json
+  submit/submission_I007_ensemble.csv（仅 --gen-sub 且有效）
 """
 
 import json
@@ -32,7 +30,6 @@ import time
 
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
@@ -42,7 +39,7 @@ DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 REL_DIR = os.path.join(PROJECT_ROOT, "rel")
 SUB_DIR = os.path.join(PROJECT_ROOT, "submit")
 CK005A_TMP = os.path.join(REL_DIR, "ck005a_tmp")
-REPORT_PATH = os.path.join(REL_DIR, "CK005j_report.json")
+REPORT_PATH = os.path.join(REL_DIR, "I007_report.json")
 TCK002_CONFIG = os.path.join(PROJECT_ROOT, "models", "tck002-ensemble.json")
 
 N_LABELS = 500
@@ -51,6 +48,7 @@ SIM_W = 0.75
 TOP_K = 3
 MAX_ACCEPT = 5
 RANDOM_STATE = 42
+PS = [0.50, 0.60, 0.70, 0.80, 0.90, 0.95]
 
 
 def parse_aln(tsv, query_ids, id_map, evalue=0.001):
@@ -110,6 +108,21 @@ def build_kmer_val(y_train):
     return sim
 
 
+def build_kmer_test(y_full):
+    sim = 0.0
+    for k, wt in zip([3, 4, 5, 6, 7, 8], [0, 0.1, 0.2, 0.4, 0.2, 0.1]):
+        if wt <= 0:
+            continue
+        d = np.load(os.path.join(REL_DIR, "TCK002a_neigh_full.npz" if k == 6
+                                 else f"CK004_neigh_k{k}_full.npz"))
+        n2 = d["idx_test"].shape[0]
+        lab = y_full[d["idx_test"][:, :5].ravel()].reshape(n2, 5, -1).astype(np.float32)
+        s = d["sim_test"][:, :5].astype(np.float32)
+        ww = np.maximum(s, 1e-7) ** 2
+        sim += wt * (lab * ww[:, :, None]).sum(1) / ww.sum(1)[:, None]
+    return sim
+
+
 def search_t(ens, y):
     cands = np.linspace(0.01, 0.99, 100)
     best = np.full(N_LABELS, 0.5)
@@ -127,6 +140,28 @@ def search_t(ens, y):
         f1t = 2 * prec * rec / np.maximum(prec + rec, 1e-9)
         best[i] = cands[f1t.argmax()]
     return best
+
+
+def row_quantile_mask(ens, p):
+    """每行 score ≥ 该行 p 分位；保证每行至少 1 个。"""
+    thr = np.quantile(ens, p, axis=1).astype(np.float32)
+    mask = ens >= thr[:, None]
+    empty = ~mask.any(axis=1)
+    if empty.any():
+        top = ens[empty].argmax(axis=1)
+        mask[empty, top] = True
+    return mask
+
+
+def apply_scope(base, overlay, scope, hit):
+    pred = base.copy()
+    if scope == "all":
+        pred = overlay
+    elif scope == "hit":
+        pred[hit] = overlay[hit]
+    else:
+        raise ValueError(scope)
+    return pred
 
 
 def macro_f1(pred, y):
@@ -188,81 +223,7 @@ def pack(name, pred, y_val, hit, miss, extra=None):
     return rec
 
 
-def make_features(ens, scut, val_len, hit):
-    scard = scut.sum(1).astype(np.float32)
-    p70 = np.quantile(ens, 0.70, axis=1)
-    p80 = np.quantile(ens, 0.80, axis=1)
-    return np.column_stack([
-        scard,
-        ens.sum(1),
-        np.log1p(val_len),
-        (ens >= 0.4).sum(1),
-        (ens >= 0.5).sum(1),
-        (ens >= 0.6).sum(1),
-        p70, p80, ens.max(1),
-        hit.astype(np.float32),
-    ]).astype(np.float32)
-
-
-def oof_gate(X, y_gate, hit):
-    """半折 Logistic，只在 hit 上拟合；输出全量 P(g=1)。"""
-    rng = np.random.RandomState(RANDOM_STATE)
-    n = len(y_gate)
-    perm = rng.permutation(n)
-    mid = n // 2
-    folds = [perm[:mid], perm[mid:]]
-    proba = np.zeros(n, np.float32)
-    aucs = []
-    for i, hold in enumerate(folds):
-        fit = folds[1 - i]
-        fit_h = fit[hit[fit]]
-        if fit_h.size < 50 or y_gate[fit_h].sum() < 10 or (1 - y_gate[fit_h]).sum() < 10:
-            proba[hold] = 0.5
-            continue
-        clf = LogisticRegression(max_iter=400, class_weight="balanced")
-        clf.fit(X[fit_h], y_gate[fit_h])
-        proba[hold] = clf.predict_proba(X[hold])[:, 1]
-        hold_h = hold[hit[hold]]
-        if hold_h.size and y_gate[hold_h].min() != y_gate[hold_h].max():
-            aucs.append(roc_auc_score(y_gate[hold_h], proba[hold_h]))
-    return proba, (float(np.mean(aucs)) if aucs else 0.5)
-
-
-def clip_ratio_rows(ens, scut, mask, ratio):
-    pred = scut.copy()
-    idx = np.where(mask)[0]
-    order = np.argsort(-ens, axis=1)
-    scard = scut.sum(1)
-    for i in idx:
-        keep = max(1, int(round(float(scard[i]) * ratio)))
-        have = int(scard[i])
-        if have <= keep:
-            continue
-        pred[i] = 0
-        # keep top-keep among currently positive if possible
-        pos = np.flatnonzero(scut[i])
-        ranked = [j for j in order[i] if scut[i, j]]
-        pred[i, ranked[:keep]] = 1
-    return pred
-
-
-def clip_p_rows(ens, scut, mask, p):
-    pred = scut.copy()
-    thr = np.quantile(ens, p, axis=1)
-    q = ens >= thr[:, None]
-    inter = (scut & q).astype(np.int8)
-    empty = inter.sum(1) == 0
-    inter[empty] = scut[empty]
-    pred[mask] = inter[mask]
-    return pred
-
-
-def main():
-    gen_sub = "--gen-sub" in sys.argv
-    t0 = time.time()
-    print("=" * 60)
-    print("CK005j: 门控后再截 hit 过预测")
-
+def load_ens_val():
     train_df = pd.read_csv(os.path.join(DATA_DIR, "train.csv"))
     label_cols = [c for c in train_df.columns if c.startswith("label_")]
     y_full = train_df[label_cols].values.astype(np.int8)
@@ -270,18 +231,12 @@ def main():
         np.arange(len(train_df)), test_size=0.2, random_state=RANDOM_STATE)
     y_train, y_val = y_full[idx_train], y_full[idx_val]
     val_ids = train_df["protein_id"].values[idx_val]
-    val_len = train_df["sequence"].str.len().values[idx_val].astype(np.float32)
     train_map = {pid: i for i, pid in enumerate(train_df["protein_id"].values[idx_train])}
-    card = y_val.sum(1).astype(np.float32)
-
     tsv = os.path.join(CK005A_TMP, "align_val_very-sensitive_e0.001.tsv")
     if not os.path.exists(tsv):
         raise FileNotFoundError("需要 CK005a very-sensitive val tsv")
     idx_v, bits_v = parse_aln(tsv, val_ids, train_map)
     hit = idx_v[:, 0] >= 0
-    miss = ~hit
-    print(f"  hit {int(hit.sum())}/{len(hit)} miss {int(miss.sum())}")
-
     sim_bit = agg_labels(idx_v, bits_v, y_train)
     sim_kmer = build_kmer_val(y_train)
     sim = ALIGN_W * sim_bit + (1 - ALIGN_W) * sim_kmer
@@ -292,61 +247,66 @@ def main():
         w = json.load(f)["best_w"]
     ens = (w["t001a"] * t1["t001a_val"] + w["t002"] * t2["t002"]
            + w["cnn"] * vp["cnn"] + SIM_W * sim)
-    auc = macro_auc(y_val, ens)
+    return train_df, label_cols, y_full, y_val, hit, ens, w
+
+
+def main():
+    gen_sub = "--gen-sub" in sys.argv
+    t0 = time.time()
+    print("=" * 60)
+    print("I007: 实例分位数截断（PCut，不估 k）")
+
+    train_df, label_cols, y_full, y_val, hit, ens, w = load_ens_val()
+    miss = ~hit
+    print(f"  hit {int(hit.sum())}/{len(hit)} miss {int(miss.sum())}")
 
     t = search_t(ens, y_val)
     scut = (ens >= t).astype(np.int8)
-    scard = scut.sum(1).astype(np.float32)
-    y_gate = (scard > card).astype(np.int8)
-    print(f"  SCut card={scard.mean():.1f}  hit 多报率={y_gate[hit].mean():.3f}  "
-          f"miss 多报率={y_gate[miss].mean():.3f}")
-
-    X = make_features(ens, scut, val_len, hit)
-    gprob, gauc = oof_gate(X, y_gate, hit)
-    print(f"  门控 OOF AUC(hit)={gauc:.3f}  Pmean hit={gprob[hit].mean():.3f}")
-
+    auc = macro_auc(y_val, ens)
     rows = [pack("scut", scut, y_val, hit, miss)]
-    print(f"  SCut F1={rows[0]['f1_100']:.4f}")
+    print(f"  SCut F1={rows[0]['f1_100']:.4f} card={rows[0]['pred_card']:.1f}")
 
-    print("[1/2] 无门控对照（全 hit 截）...")
-    for r in (0.70, 0.80, 0.85):
-        pred = clip_ratio_rows(ens, scut, hit, r)
-        rec = pack(f"nogate_ratio{r:.2f}", pred, y_val, hit, miss,
-                   {"delta": round(macro_f1(pred, y_val) - rows[0]["f1_100"], 6)})
-        rows.append(rec)
-        print(f"  {rec['name']:24s} F1={rec['f1_100']:.4f} d={rec['delta']:+.4f} "
-              f"card={rec['pred_card']:.1f}")
-    for p in (0.70, 0.80):
-        pred = clip_p_rows(ens, scut, hit, p)
-        rec = pack(f"nogate_p{p:.2f}", pred, y_val, hit, miss,
-                   {"delta": round(macro_f1(pred, y_val) - rows[0]["f1_100"], 6)})
-        rows.append(rec)
-        print(f"  {rec['name']:24s} F1={rec['f1_100']:.4f} d={rec['delta']:+.4f} "
-              f"card={rec['pred_card']:.1f}")
+    print("[1/2] 行分位网格...")
+    for p in tqdm(PS, desc="    p", unit="p"):
+        qmask = row_quantile_mask(ens, p)
+        qpred = qmask.astype(np.int8)
+        inter = (scut & qmask).astype(np.int8)
+        empty = inter.sum(1) == 0
+        if empty.any():
+            inter[empty] = scut[empty]
+        for mode, overlay in [("intersect", inter), ("replace", qpred)]:
+            for scope in ("hit", "all"):
+                pred = apply_scope(scut, overlay, scope, hit)
+                rec = pack(
+                    f"{mode}_p{p:.2f}_{scope}", pred, y_val, hit, miss,
+                    {"p": p, "mode": mode, "scope": scope,
+                     "delta": round(macro_f1(pred, y_val) - rows[0]["f1_100"], 6)})
+                rows.append(rec)
+                print(f"  {rec['name']:28s} F1={rec['f1_100']:.4f} "
+                      f"d={rec['delta']:+.4f} miss={rec['f1_miss']:.4f} "
+                      f"card={rec['pred_card']:.1f}")
 
-    print("[2/2] 门控网格...")
-    for tau in tqdm([0.50, 0.60, 0.70, 0.80], desc="    τ", unit="t"):
-        gated = hit & (gprob >= tau)
-        print(f"  τ={tau:.2f} 触发 {int(gated.sum())}/{int(hit.sum())} hit "
-              f"({gated.sum()/max(hit.sum(),1):.2f})")
-        for r in (0.70, 0.80, 0.85):
-            pred = clip_ratio_rows(ens, scut, gated, r)
+    print("[2/2] 全局固定阈对照...")
+    for thr in (0.40, 0.50, 0.60):
+        gmask = ens >= thr
+        gpred = gmask.astype(np.int8)
+        empty = gpred.sum(1) == 0
+        if empty.any():
+            top = ens[empty].argmax(1)
+            gpred[empty, top] = 1
+        inter = (scut & gmask).astype(np.int8)
+        empty = inter.sum(1) == 0
+        if empty.any():
+            inter[empty] = scut[empty]
+        for mode, overlay in [("intersect", inter), ("replace", gpred)]:
+            pred = apply_scope(scut, overlay, "hit", hit)
             rec = pack(
-                f"gate_t{tau:.2f}_r{r:.2f}", pred, y_val, hit, miss,
-                {"tau": tau, "ratio": r, "n_clip": int(gated.sum()),
+                f"{mode}_t{thr:.2f}_hit", pred, y_val, hit, miss,
+                {"thr": thr, "mode": mode, "scope": "hit",
                  "delta": round(macro_f1(pred, y_val) - rows[0]["f1_100"], 6)})
             rows.append(rec)
-            print(f"    {rec['name']:26s} F1={rec['f1_100']:.4f} d={rec['delta']:+.4f} "
-                  f"card={rec['pred_card']:.1f}")
-        for p in (0.70, 0.80):
-            pred = clip_p_rows(ens, scut, gated, p)
-            rec = pack(
-                f"gate_t{tau:.2f}_p{p:.2f}", pred, y_val, hit, miss,
-                {"tau": tau, "p": p, "n_clip": int(gated.sum()),
-                 "delta": round(macro_f1(pred, y_val) - rows[0]["f1_100"], 6)})
-            rows.append(rec)
-            print(f"    {rec['name']:26s} F1={rec['f1_100']:.4f} d={rec['delta']:+.4f} "
-                  f"card={rec['pred_card']:.1f}")
+            print(f"  {rec['name']:28s} F1={rec['f1_100']:.4f} "
+                  f"d={rec['delta']:+.4f} card={rec['pred_card']:.1f}")
 
     base = rows[0]
     ranked = [r for r in rows if r["name"] != "scut"]
@@ -362,16 +322,51 @@ def main():
         "gain_all_f1": round(gain, 6),
         "useful": useful,
         "auc_ens": round(auc, 6),
-        "gate_auc_hit": round(gauc, 6),
-        "hit_overpred_rate": round(float(y_gate[hit].mean()), 4),
         "grid": rows,
         "seconds": round(time.time() - t0, 1),
     }
+
+    if gen_sub and useful:
+        print("[sub] test 端重算最优配置...")
+        test_df = pd.read_csv(os.path.join(DATA_DIR, "test.csv"))
+        tsv_t = os.path.join(CK005A_TMP, "align_test_very-sensitive_e0.001.tsv")
+        if not os.path.exists(tsv_t):
+            raise FileNotFoundError("需要 CK005a test tsv")
+        full_map = {pid: i for i, pid in enumerate(train_df["protein_id"].values)}
+        idx_t, bits_t = parse_aln(tsv_t, test_df["protein_id"].values, full_map)
+        sim_bit_t = agg_labels(idx_t, bits_t, y_full)
+        sim_kmer_t = build_kmer_test(y_full)
+        sim_t = ALIGN_W * sim_bit_t + (1 - ALIGN_W) * sim_kmer_t
+        tp = np.load(os.path.join(REL_DIR, "TC003_test_probs.npz"))
+        t1t = np.load(os.path.join(REL_DIR, "TCK001_t001a_probs.npz"))
+        t2t = np.load(os.path.join(REL_DIR, "T002_test_probs.npz"))
+        ens_t = (w["t001a"] * t1t["t001a_test"] + w["t002"] * t2t["t002"]
+                 + w["cnn"] * tp["cnn"] + SIM_W * sim_t)
+        scut_t = (ens_t >= t[None, :]).astype(np.int8)
+        hit_t = idx_t[:, 0] >= 0
+        p = float(best.get("p", 0.8))
+        mode = best.get("mode", "intersect")
+        scope = best.get("scope", "hit")
+        qmask = row_quantile_mask(ens_t, p)
+        if mode == "intersect":
+            overlay = (scut_t & qmask).astype(np.int8)
+            empty = overlay.sum(1) == 0
+            if empty.any():
+                overlay[empty] = scut_t[empty]
+        else:
+            overlay = qmask.astype(np.int8)
+        pred_t = apply_scope(scut_t, overlay, scope, hit_t)
+        os.makedirs(SUB_DIR, exist_ok=True)
+        sub = pd.concat([test_df[["protein_id"]],
+                         pd.DataFrame(pred_t, columns=label_cols)], axis=1)
+        sub_path = os.path.join(SUB_DIR, "submission_I007_ensemble.csv")
+        sub.to_csv(sub_path, index=False)
+        report["submission"] = sub_path
+        print(f"  提交: {sub_path} ({len(sub)} 行)")
+
     with open(REPORT_PATH, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print(f"  报告: {REPORT_PATH}")
-    if gen_sub and not useful:
-        print("  --gen-sub 忽略（未过 +0.001）")
     print("=" * 60)
     print(f"完成! 总耗时: {time.time() - t0:.0f}s")
 
