@@ -1,22 +1,28 @@
 """
-C004-bagging — 基模型 Bagging（多种子集成，提升泛化）
+C004-bagging — C002b 多种子 Deep Ensemble（换一元 CNN 分数）
 ================================================================
-动机:
-  当前所有基模型只用一个 seed（42）训练。CNN 训练有随机性
-  （初始化/Dropout/shuffle），不同 seed 的误差部分不相关 →
-  平均后方差降低。Bagging 是经典集成手段，本项目未试过。
+依据:
+  - Lakshminarayanan, Pritzel & Blundell, NeurIPS 2017,
+    arXiv:1612.01474。随机初始化的独立网络平均，校准与
+    精度都优于单模型；多样性来自不同盆地，不是 Dropout。
+  - Huang et al., ICLR 2017, arXiv:1704.00109。Snapshot
+    Ensemble 一次训练取多快照，省算力但多样性弱于独立种子。
+  - Wang, Jia & Breckon, ICIP 2019, doi:10.1109/icip.2019.8803793
+    多标签 CNN 集成是强基线。
+  - C005 换头进四路 +0.0007：CNN 只占 deep 的 0.2，再被 sim 0.5
+    稀释。本实验必须接到 I019 上评，不能只看 TCK002。
 方案:
-  1. 复用 seed=42 的 C002b 概率（rel/TC003_{val,test}_probs['cnn']）
-  2. 新训 seeds=1,2,3,5（各 80epoch），保存模型+概率
-     切分固定 random_state=42（与全项目一致）；seed 只控初始化/shuffle/dropout
-  3. 平均所有 seed 的概率 → cnn_bag_val/test
-  4. 代入四路集成（t001a+t002+cnn_bag+sim），与 TCK002 同权重
-  5. 有效 → 生成提交；无效 → 记录负结果
+  切分仍 random_state=42。复用 seed=42 的 TC003 CNN 概率。
+  默认只加 seed=1 做探针；确认 val 相关不太高、I019 OOF≥+0.001
+  再加 2,3,5。各 80 epoch，ASL+cosine，与 C002b 同超参。
 用法:
-  python code/C/C004-bagging.py [--seeds=1,2,3,5] [--epochs=80] [--gen-sub]
+  python code/C/C004-bagging.py                  # 探针 seed=1
+  python code/C/C004-bagging.py --seeds=1,2,3,5  # 满配
+  python code/C/C004-bagging.py --epochs=80 --gen-sub
 输出:
   rel/C004_bag_report.json
-  submit/submission_C004_bag.csv（若有效）
+  rel/C004_bag.npz
+  models/c004-seed{k}.pt
 """
 
 import importlib.util
@@ -249,7 +255,7 @@ def eval_ensemble(cnn_probs_val, cnn_probs_test, suffix, sim_val, sim_test, y_va
 
 def main():
     n_epochs = N_EPOCHS
-    seeds_new = [1, 2, 3, 5]
+    seeds_new = [1]  # 探针；满配再 --seeds=1,2,3,5
     for a in sys.argv:
         if a.startswith("--seeds="):
             seeds_new = [int(s) for s in a.split("=")[1].split(",")]
@@ -285,38 +291,116 @@ def main():
                          val_seeds=np.stack(probs["val"], axis=-1),
                          test_seeds=np.stack(probs["test"], axis=-1))
 
-    # ─── 4. 集成评估 ───
-    print("[4/4] 集成评估...")
-    sim_val, sim_test, y_val = _build_sim_k6()
-    res42 = eval_ensemble(s42_val, s42_test, "seed=42", sim_val, sim_test, y_val)
-    res_bag = eval_ensemble(cnn_bag_val, cnn_bag_test, f"n={n_seeds} bag", sim_val, sim_test, y_val)
-    gain = res_bag["f1_100"] - res42["f1_100"]
-    print(f"  增益: {gain:+.4f} ({res42['f1_100']:.4f} → {res_bag['f1_100']:.4f})")
+    # ─── 4. 接到 I019 评估（主）+ 旧四路（辅）───
+    print("[4/4] I019 评估...")
+    i011_spec = importlib.util.spec_from_file_location(
+        "i011", os.path.join(PROJECT_ROOT, "code", "I", "I011-rrf.py"))
+    i011 = importlib.util.module_from_spec(i011_spec)
+    i011_spec.loader.exec_module(i011)
+    i019_spec = importlib.util.spec_from_file_location(
+        "i019", os.path.join(PROJECT_ROOT, "code", "I", "I019-sinkhorn.py"))
+    i019 = importlib.util.module_from_spec(i019_spec)
+    i019_spec.loader.exec_module(i019)
 
-    def _metrics(res):
-        return {k: res[k] for k in ("f1_100", "recall", "precision", "auc")}
+    train_df = pd.read_csv(os.path.join(i011.DATA_DIR, "train.csv"))
+    label_cols = [c for c in train_df.columns if c.startswith("label_")]
+    y_full = train_df[label_cols].values.astype(np.int8)
+    idx_train, idx_val = train_test_split(
+        np.arange(len(train_df)), test_size=0.2, random_state=SPLIT_SEED)
+    y_train, y_val = y_full[idx_train], y_full[idx_val]
+    val_ids = train_df["protein_id"].values[idx_val]
+    train_map = {pid: i for i, pid in enumerate(train_df["protein_id"].values[idx_train])}
+    tsv = os.path.join(i011.CK005A_TMP, "align_val_very-sensitive_e0.001.tsv")
+    idx_v, bits_v = i011.parse_aln(tsv, val_ids, train_map)
+    hit = idx_v[:, 0] >= 0
+    miss = ~hit
+    sim_bit = i011.agg_labels(idx_v, bits_v, y_train)
+    sim_kmer = i011.build_kmer_val(y_train)
+    sim = i011.ALIGN_W * sim_bit + (1.0 - i011.ALIGN_W) * sim_kmer
+    t1 = np.load(os.path.join(REL_DIR, "TCK001_t001a_probs.npz"))
+    t2 = np.load(os.path.join(REL_DIR, "T002_val_probs.npz"))
+    w = json.load(open(os.path.join(PROJECT_ROOT, "models", "tck002-ensemble.json")))["best_w"]
 
-    report = {"n_seeds": n_seeds, "seeds_new": seeds_new, "epochs": n_epochs,
-              "single_seed_42": _metrics(res42), "bagged": _metrics(res_bag),
-              "gain": round(float(gain), 6)}
-    if gain <= 0:
-        report["conclusion"] = "无增益, bagging 无效"
-        print("结论: bagging 无增益, 不生成提交")
+    def i019_from_cnn(cnn):
+        deep = w["t001a"] * t1["t001a_val"] + w["t002"] * t2["t002"] + w["cnn"] * cnn
+        s011 = deep + i011.SIM_W * sim + 0.50 * i011.col_norm(
+            i011.rrf_pair(deep, sim, 30))
+        n = s011.shape[0]
+        pi = y_train.mean(0).astype(np.float64)
+        t_i011 = i011.search_t(s011, y_val)
+        row_m = np.maximum((s011 >= t_i011).sum(1).astype(np.float64), 1.0)
+        col_m = np.maximum(pi * n * 1.0, 1e-6)
+        col_m *= row_m.sum() / col_m.sum()
+        ker = np.exp((s011 - s011.max(axis=1, keepdims=True)) / 0.20)
+        p = i019.sinkhorn(ker, row_m, col_m)
+        return i019.mix(s011, p, 0.60)
+
+    s019 = i019_from_cnn(s42_val)
+    sbag = i019_from_cnn(cnn_bag_val)
+    rec0 = i011.eval_ens(s019, y_val, hit, miss, "i019")
+    recb = i011.eval_ens(sbag, y_val, hit, miss, f"bag_n{n_seeds}")
+    recb["delta_i019"] = round(recb["f1_100"] - rec0["f1_100"], 6)
+    print(f"  I019     F1={rec0['f1_100']:.4f} miss={rec0['f1_miss']:.4f}")
+    print(f"  bag n={n_seeds} F1={recb['f1_100']:.4f} d={recb['delta_i019']:+.4f} "
+          f"miss={recb['f1_miss']:.4f}")
+
+    rng = np.random.RandomState(SPLIT_SEED)
+    perm = rng.permutation(len(y_val))
+    mid = len(y_val) // 2
+    folds = [perm[:mid], perm[mid:]]
+
+    def oof_f1(score):
+        pred = np.zeros_like(score, dtype=np.int8)
+        for i, hold in enumerate(folds):
+            fit = folds[1 - i]
+            th = i011.search_t(score[fit], y_val[fit])
+            pred[hold] = (score[hold] >= th).astype(np.int8)
+        return round(i011.macro_f1(pred, y_val), 6)
+
+    oof0 = oof_f1(s019)
+    oofb = oof_f1(sbag)
+    gain_oof = round(oofb - oof0, 6)
+    print(f"  OOF I019={oof0:.4f} bag={oofb:.4f} d={gain_oof:+.4f}")
+
+    corr = float(np.corrcoef(s42_val.ravel(), cnn_bag_val.ravel())[0, 1])
+    print(f"  corr(seed42, bag)={corr:.4f}")
+
+    sim_val, sim_test, y_val_k6 = _build_sim_k6()
+    res42 = eval_ensemble(s42_val, s42_test, "seed=42", sim_val, sim_test, y_val_k6)
+    res_bag = eval_ensemble(cnn_bag_val, cnn_bag_test, f"n={n_seeds} bag",
+                            sim_val, sim_test, y_val_k6)
+
+    useful = bool(gain_oof >= 0.001)
+    report = {
+        "n_seeds": n_seeds,
+        "seeds_new": seeds_new,
+        "epochs": n_epochs,
+        "corr_seed42_bag": round(corr, 6),
+        "i019": rec0,
+        "bag_i019": recb,
+        "oof_i019": oof0,
+        "oof_bag": oofb,
+        "gain_oof_vs_i019": gain_oof,
+        "useful": useful,
+        "tck002_seed42": {k: res42[k] for k in ("f1_100", "recall", "precision", "auc")},
+        "tck002_bag": {k: res_bag[k] for k in ("f1_100", "recall", "precision", "auc")},
+    }
+    if useful:
+        report["conclusion"] = "I019 OOF≥+0.001，可加种子"
+        print("结论: 有效，可加种子")
     else:
-        report["conclusion"] = "有增益"
-        print("结论: bagging 有增益")
-        if gen_sub:
-            test_df = pd.read_csv(f"{PROJECT_ROOT}/data/test.csv")
-            label_cols = [c for c in pd.read_csv(f"{PROJECT_ROOT}/data/train.csv", nrows=0).columns
-                          if c.startswith("label_")]
-            y_pred = (res_bag["ens_test"] >= res_bag["best_t"][None, :]).astype(np.int8)
-            os.makedirs(SUB_DIR, exist_ok=True)
-            sub = test_df[["protein_id"]].copy()
-            sub = pd.concat([sub, pd.DataFrame(y_pred, columns=label_cols, index=sub.index)], axis=1)
-            sub_path = f"{SUB_DIR}/submission_C004_bag.csv"
-            sub.to_csv(sub_path, index=False)
-            report["submission"] = sub_path
-            print(f"  提交: {sub_path}")
+        report["conclusion"] = "I019 OOF 未过 +0.001"
+        print("结论: 未过门槛")
+    if gen_sub and useful:
+        test_df = pd.read_csv(os.path.join(i011.DATA_DIR, "test.csv"))
+        y_pred = (res_bag["ens_test"] >= res_bag["best_t"][None, :]).astype(np.int8)
+        os.makedirs(SUB_DIR, exist_ok=True)
+        sub = test_df[["protein_id"]].copy()
+        sub = pd.concat([sub, pd.DataFrame(y_pred, columns=label_cols, index=sub.index)], axis=1)
+        sub_path = os.path.join(SUB_DIR, "submission_C004_bag.csv")
+        sub.to_csv(sub_path, index=False)
+        report["submission"] = sub_path
+        print(f"  提交: {sub_path}")
 
     with open(f"{REL_DIR}/C004_bag_report.json", "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
