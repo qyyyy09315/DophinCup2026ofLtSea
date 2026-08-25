@@ -1,5 +1,5 @@
 """
-CK005j-ic — 按邻居稀有标签质量重加权 k-mer 传递，混进 I019
+CK006c-ic — 按邻居稀有标签质量重加权 k-mer 传递，混进 I019
 ================================================================
 依据:
   - Resnik, JAIR 1999, doi:10.1613/jair.514
@@ -7,7 +7,7 @@ CK005j-ic — 按邻居稀有标签质量重加权 k-mer 传递，混进 I019
   - CAFA: Radivojac et al., Nature Methods 2013,
     doi:10.1038/nmeth.2340。评估用信息量加权，稀有 GO 更值钱。
   - 标签匿名无本体，用经验频率 π_j 当 P(c)。
-  - CK005i：TF-IDF 改的是 k-mer 种子权，corr 0.85，关闭。
+  - CK006b：TF-IDF 改的是 k-mer 种子权，corr 0.85，关闭。
     I029/I030：列缩放 / 改阈值目标被 SCut 吞。
     本实验改邻居权重，不是列乘 IC。
 自己的改法:
@@ -17,9 +17,9 @@ CK005j-ic — 按邻居稀有标签质量重加权 k-mer 传递，混进 I019
   ens'=(1-γ)·I019 + γ·col_norm(ic_sim)，γ∈{0.15,0.30}。
   门槛相对 I019 半折 ≥ +0.001。
 用法:
-  python code/CK/CK005j-ic.py
+  python code/CK/CK006c-ic.py
 输出:
-  rel/CK005j_report.json
+  rel/CK006c_report.json
 """
 
 import importlib.util
@@ -46,7 +46,7 @@ def load_mod(name, rel):
 i011 = load_mod("i011", os.path.join("I", "I011-rrf.py"))
 i019 = load_mod("i019", os.path.join("I", "I019-sinkhorn.py"))
 
-REPORT_PATH = os.path.join(i011.REL_DIR, "CK005j_report.json")
+REPORT_PATH = os.path.join(i011.REL_DIR, "CK006c_report.json")
 K_RRF, BETA_RRF = 30, 0.50
 TAU_SK, RHO, ALPHA_SK = 0.20, 1.0, 0.60
 LAM_GRID = (0.5, 1.0, 2.0)
@@ -105,7 +105,7 @@ def build_i019(train_df, y_full, idx_train, idx_val):
 def main():
     t0 = time.time()
     print("=" * 60)
-    print("CK005j: IC 邻居重加权")
+    print("CK006c: IC 邻居重加权")
 
     train_df = pd.read_csv(os.path.join(i011.DATA_DIR, "train.csv"))
     label_cols = [c for c in train_df.columns if c.startswith("label_")]

@@ -1,21 +1,22 @@
 """
-CK005i-tfidf — TF-IDF 加权 6-mer 邻居，混进 I019
+CK006d-hub — k-mer 邻居按入度 hubness 降权，混进 I019
 ================================================================
 依据:
-  - Salton & Buckley, Information Processing & Management 1988,
-    doi:10.1016/0306-4573(88)90021-0。TF-IDF 降权高频词。
-  - CK002：HashingVectorizer + L2，等权计数余弦。
-  - CK005g/h：改字母表/掩码仍与精确 k-mer 共线。
-    本实验字母表与掩码不变，只改种子权重。
+  - Radovanović, Nanopoulos & Ivanović, ICML 2009,
+    doi:10.1145/1553374.1553485；JMLR 2010「Hubs in Space」。
+    高维 kNN 里少数点成为许多查询的近邻（hub），会污染标签传递。
+  - CK006c：按邻居携带的稀有标签 IC 加权，corr 0.99，关闭。
+    本实验降权的是「被多少 query 选中」，不是标签稀有度。
+  - CK006b：TF-IDF 改的是 k-mer 种子权。这里改的是邻居样本权。
 自己的改法:
-  冻 I019。TfidfVectorizer char 6-mer（sublinear_tf），val→idx_train
-  top-5、sim² 加权传标签。ens'=(1-γ)·I019 + γ·col_norm(tfidf)。
-  γ∈{0.15,0.30}。门槛相对 I019 半折 ≥ +0.001。
+  冻 I019。对每个 k 的 val→train top-5 名单，N_k[j]=该 train 点被选次数。
+  w = sim² / (N_k[j]^α)，再加权传标签。α∈{0.5,1.0}。
+  ens'=(1-γ)·I019 + γ·col_norm(hub_sim)，γ∈{0.15,0.30}。
+  门槛相对 I019 半折 ≥ +0.001。
 用法:
-  python code/CK/CK005i-tfidf.py
+  python code/CK/CK006d-hub.py
 输出:
-  rel/CK005i_report.json
-  rel/CK005i_neigh_k6.npz
+  rel/CK006d_report.json
 """
 
 import importlib.util
@@ -25,9 +26,7 @@ import time
 
 import numpy as np
 import pandas as pd
-from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import normalize
 from tqdm import tqdm
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -44,43 +43,37 @@ def load_mod(name, rel):
 i011 = load_mod("i011", os.path.join("I", "I011-rrf.py"))
 i019 = load_mod("i019", os.path.join("I", "I019-sinkhorn.py"))
 
-REPORT_PATH = os.path.join(i011.REL_DIR, "CK005i_report.json")
-CACHE_PATH = os.path.join(i011.REL_DIR, "CK005i_neigh_k6.npz")
+REPORT_PATH = os.path.join(i011.REL_DIR, "CK006d_report.json")
 K_RRF, BETA_RRF = 30, 0.50
 TAU_SK, RHO, ALPHA_SK = 0.20, 1.0, 0.60
+A_GRID = (0.5, 1.0)
 G_GRID = (0.15, 0.30)
-TOP_K = 5
-BLOCK = 2048
-MAX_FEATURES = 2 ** 18
+TOP = 5
+K_W = ((3, 0.0), (4, 0.1), (5, 0.2), (6, 0.4), (7, 0.2), (8, 0.1))
 
 
-def neigh_tfidf(seqs_tr, seqs_q, cache=CACHE_PATH):
-    if os.path.exists(cache):
-        d = np.load(cache)
-        return d["idx_val"], d["sim_val"]
-    vec = TfidfVectorizer(
-        analyzer="char", ngram_range=(6, 6),
-        max_features=MAX_FEATURES, sublinear_tf=True, dtype=np.float32)
-    x_tr = normalize(vec.fit_transform(seqs_tr))
-    x_q = normalize(vec.transform(seqs_q))
-    n_q = x_q.shape[0]
-    idx = np.zeros((n_q, TOP_K), np.int64)
-    sim = np.zeros((n_q, TOP_K), np.float32)
-    for s in tqdm(range(0, n_q, BLOCK), desc="    tfidf 邻居", unit="blk"):
-        e = min(s + BLOCK, n_q)
-        block = (x_q[s:e] @ x_tr.T).toarray()
-        part = np.argpartition(-block, TOP_K, axis=1)[:, :TOP_K]
-        idx[s:e] = part
-        sim[s:e] = np.take_along_axis(block, part, axis=1)
-    np.savez_compressed(cache, idx_val=idx, sim_val=sim)
-    return idx, sim
-
-
-def transfer(idx, sim, y_train):
-    n = idx.shape[0]
-    lab = y_train[idx[:, :TOP_K].ravel()].reshape(n, TOP_K, -1).astype(np.float32)
-    ww = np.maximum(sim[:, :TOP_K], 1e-7) ** 2
-    return (lab * ww[:, :, None]).sum(1) / ww.sum(1)[:, None]
+def hub_kmer(y_train, n_train, alpha):
+    sim = 0.0
+    stats = {}
+    for k, wt in K_W:
+        if wt <= 0:
+            continue
+        prefix = "CK003" if k >= 7 else "CK002"
+        d = np.load(os.path.join(i011.REL_DIR, f"{prefix}_neigh_k{k}.npz"))
+        idx = d["idx_val"][:, :TOP]
+        s = d["sim_val"][:, :TOP].astype(np.float32)
+        n = idx.shape[0]
+        nk = np.bincount(idx.ravel(), minlength=n_train).astype(np.float32)
+        stats[k] = {
+            "max": int(nk.max()),
+            "mean": round(float(nk[nk > 0].mean()) if (nk > 0).any() else 0.0, 2),
+            "hubs": int((nk >= 10).sum()),
+        }
+        lab = y_train[idx.ravel()].reshape(n, TOP, -1).astype(np.float32)
+        ww = np.maximum(s, 1e-7) ** 2
+        ww = ww / np.maximum(nk[idx] ** alpha, 1.0)
+        sim = sim + wt * (lab * ww[:, :, None]).sum(1) / ww.sum(1)[:, None]
+    return sim.astype(np.float32), stats
 
 
 def build_i019(train_df, y_full, idx_train, idx_val):
@@ -99,7 +92,8 @@ def build_i019(train_df, y_full, idx_train, idx_val):
     with open(i011.TCK002_CONFIG, encoding="utf-8") as f:
         w = json.load(f)["best_w"]
     deep = w["t001a"] * t1["t001a_val"] + w["t002"] * t2["t002"] + w["cnn"] * vp["cnn"]
-    s011 = deep + i011.SIM_W * sim + BETA_RRF * i011.col_norm(i011.rrf_pair(deep, sim, K_RRF))
+    s011 = deep + i011.SIM_W * sim + BETA_RRF * i011.col_norm(
+        i011.rrf_pair(deep, sim, K_RRF))
     n = s011.shape[0]
     pi = y_train.mean(0).astype(np.float64)
     t_i011 = i011.search_t(s011, y_val)
@@ -115,7 +109,7 @@ def build_i019(train_df, y_full, idx_train, idx_val):
 def main():
     t0 = time.time()
     print("=" * 60)
-    print("CK005i: TF-IDF 6-mer 邻居")
+    print("CK006d: hubness 邻居降权")
 
     train_df = pd.read_csv(os.path.join(i011.DATA_DIR, "train.csv"))
     label_cols = [c for c in train_df.columns if c.startswith("label_")]
@@ -128,33 +122,32 @@ def main():
     rec0 = i011.eval_ens(s019, y_val, hit, miss, "i019")
     print(f"  I019 F1={rec0['f1_100']:.4f}")
 
-    seqs = train_df["sequence"].values
-    print("[1/2] TF-IDF 邻居 ...")
-    idx_n, sim_n = neigh_tfidf(seqs[idx_train], seqs[idx_val])
-    tf = transfer(idx_n, sim_n, y_train)
-    rec_t = i011.eval_ens(tf, y_val, hit, miss, "tfidf_k6")
-    rec_t["delta_i019"] = round(rec_t["f1_100"] - rec0["f1_100"], 6)
-    print(f"  tfidf 独立 F1={rec_t['f1_100']:.4f}")
-
-    ck6 = np.load(os.path.join(i011.REL_DIR, "CK002_neigh_k6.npz"))
-    top1_ov = float((idx_n[:, 0] == ck6["idx_val"][:, 0]).mean())
-    set_ov = [len(set(idx_n[i, :5]) & set(ck6["idx_val"][i, :5])) / 5.0
-              for i in range(len(idx_n))]
-    ov5 = float(np.mean(set_ov))
-    corr = float(np.corrcoef(tf.ravel(), sim_kmer.ravel())[0, 1])
-    print(f"  vs CK002 k6: top1重叠={top1_ov:.3f} top5={ov5:.3f} corr={corr:.3f}")
-
-    rows = [rec0, rec_t]
+    rows = [rec0]
     configs = {"i019": s019}
-    tf_n = i011.col_norm(tf)
-    for g in G_GRID:
-        mixed = (1.0 - g) * s019 + g * tf_n
-        name = f"mix_g{g:.2f}"
-        rec = i011.eval_ens(mixed, y_val, hit, miss, name, {"gamma": g})
-        rec["delta_i019"] = round(rec["f1_100"] - rec0["f1_100"], 6)
-        rows.append(rec)
-        configs[name] = mixed
-        print(f"  {name:14s} F1={rec['f1_100']:.4f} d={rec['delta_i019']:+.4f}")
+    hub_stats = {}
+    overlap = {}
+
+    print("[1/2] α × γ ...")
+    for a in tqdm(A_GRID, desc="    α", unit="a"):
+        hub_sim, stats = hub_kmer(y_train, len(y_train), a)
+        hub_stats[f"a{a:.1f}"] = stats
+        rec_r = i011.eval_ens(hub_sim, y_val, hit, miss, f"hub_a{a:.1f}")
+        rec_r["delta_i019"] = round(rec_r["f1_100"] - rec0["f1_100"], 6)
+        rows.append(rec_r)
+        corr = float(np.corrcoef(hub_sim.ravel(), sim_kmer.ravel())[0, 1])
+        overlap[f"a{a:.1f}"] = round(corr, 4)
+        print(f"  hub α={a:.1f} 独立 F1={rec_r['f1_100']:.4f} corr_kmer={corr:.3f} "
+              f"k6 hub≥10={stats.get(6, {}).get('hubs', '?')}")
+        hub_n = i011.col_norm(hub_sim)
+        for g in G_GRID:
+            mixed = (1.0 - g) * s019 + g * hub_n
+            name = f"mix_a{a:.1f}_g{g:.2f}"
+            rec = i011.eval_ens(mixed, y_val, hit, miss, name,
+                                {"alpha": a, "gamma": g})
+            rec["delta_i019"] = round(rec["f1_100"] - rec0["f1_100"], 6)
+            rows.append(rec)
+            configs[name] = mixed
+            print(f"  {name:18s} F1={rec['f1_100']:.4f} d={rec['delta_i019']:+.4f}")
 
     print("[2/2] 半折核对...")
     rng = np.random.RandomState(i011.RANDOM_STATE)
@@ -183,7 +176,7 @@ def main():
         oof_rows.append(rec)
         if name == "i019":
             oof_i019 = rec["f1_100"]
-        print(f"  oof_{name:14s} F1={rec['f1_100']:.4f}")
+        print(f"  oof_{name:18s} F1={rec['f1_100']:.4f}")
     for rec in oof_rows:
         rec["delta_i019"] = round(rec["f1_100"] - oof_i019, 6)
 
@@ -196,12 +189,11 @@ def main():
 
     report = {
         "baseline_i019": rec0,
-        "tfidf_raw": rec_t,
-        "overlap": {"top1": round(top1_ov, 4), "top5": round(ov5, 4),
-                    "corr_kmer": round(corr, 4)},
         "best_oof": best_oof,
         "gain_oof_vs_i019": round(gain, 6),
         "useful": useful,
+        "hub_stats": hub_stats,
+        "corr_kmer": overlap,
         "grid": rows,
         "oof_grid": oof_rows,
         "seconds": round(time.time() - t0, 1),

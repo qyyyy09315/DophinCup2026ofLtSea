@@ -1,24 +1,23 @@
 """
-CK005g-redalpha — Murphy-5 缩减字母表 k-mer 邻居，混进 I019
+CK006e-recip — k-mer 邻居按共享近邻过滤后再传标签，混进 I019
 ================================================================
 依据:
-  - Murphy, Wallqvist & Levy, Protein Engineering 2000,
-    doi:10.1093/protein/13.3.149。折叠识别可用 5 组字母：
-    LVIMC / ASGTP / FYW / EDNQ / KRH。
-  - Leslie et al., Bioinformatics 2004, doi:10.1093/bioinformatics/btg431
-    mismatch string kernel：允许字母替换的谱核。缩减字母表是更粗的替换。
-  - CK002/CK004：20 字母精确 k-mer。CK005b 窗口 k-mer 已关。
-    本实验换字母表，不换窗口、不重开图传播。
+  - Qin et al., CVPR 2011, doi:10.1109/cvpr.2011.5995373
+    k-reciprocal nearest neighbors：双方互为近邻才保留。
+  - Zhong et al., CVPR 2017, doi:10.1109/cvpr.2017.389
+    k-reciprocal encoding 做人再识别重排。
+  - CK006d：入度降权 corr 0.995，不换邻居集合，关闭。
+    val 不在 train 图里，无法直接互近邻。改成共享近邻：
+    保留 t 当且仅当 |N(q) ∩ N(t)| ≥ m。
 自己的改法:
-  冻 I019。序列映射到 Murphy-5 后再 HashingVectorizer k-mer，
-  val→idx_train top-5、sim² 加权传标签。
-  ens'=(1-γ)·I019 + γ·col_norm(red)。
-  k∈{6,8}，γ∈{0.15,0.30}。门槛相对 I019 半折 ≥ +0.001。
+  冻 I019。k=6：val→train top-5（CK002）× train→train top-5（ECK003）。
+  m∈{1,2}。过滤后 sim² 加权；若全空则回退 top-1。
+  ens'=(1-γ)·I019 + γ·col_norm(recip)，γ∈{0.15,0.30}。
+  门槛相对 I019 半折 ≥ +0.001。
 用法:
-  python code/CK/CK005g-redalpha.py
+  python code/CK/CK006e-recip.py
 输出:
-  rel/CK005g_report.json
-  rel/CK005g_neigh_k{k}.npz
+  rel/CK006e_report.json
 """
 
 import importlib.util
@@ -28,10 +27,7 @@ import time
 
 import numpy as np
 import pandas as pd
-from scipy import sparse
-from sklearn.feature_extraction.text import HashingVectorizer
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import normalize
 from tqdm import tqdm
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -48,57 +44,50 @@ def load_mod(name, rel):
 i011 = load_mod("i011", os.path.join("I", "I011-rrf.py"))
 i019 = load_mod("i019", os.path.join("I", "I019-sinkhorn.py"))
 
-REPORT_PATH = os.path.join(i011.REL_DIR, "CK005g_report.json")
+REPORT_PATH = os.path.join(i011.REL_DIR, "CK006e_report.json")
 K_RRF, BETA_RRF = 30, 0.50
 TAU_SK, RHO, ALPHA_SK = 0.20, 1.0, 0.60
-K_GRID = (6, 8)
+M_GRID = (1, 2)
 G_GRID = (0.15, 0.30)
-TOP_K = 5
-N_FEATURES = 2 ** 20
-BLOCK = 2048
-
-TABLE = str.maketrans({
-    "L": "B", "V": "B", "I": "B", "M": "B", "C": "B",
-    "A": "A", "S": "A", "G": "A", "T": "A", "P": "A",
-    "F": "R", "Y": "R", "W": "R",
-    "E": "D", "D": "D", "N": "D", "Q": "D",
-    "K": "K", "R": "K", "H": "K",
-})
-KEEP = set("ABRDK")
+TOP = 5
 
 
-def reduce_seq(seq):
-    s = seq.upper().translate(TABLE)
-    return "".join(c if c in KEEP else "X" for c in s)
-
-
-def neigh_red(seqs_tr, seqs_q, k, cache):
-    if os.path.exists(cache):
-        d = np.load(cache)
-        return d["idx_val"], d["sim_val"]
-    vec = HashingVectorizer(
-        analyzer="char", ngram_range=(k, k),
-        n_features=N_FEATURES, dtype=np.float32)
-    x_tr = normalize(sparse.csr_matrix(vec.transform(seqs_tr)))
-    x_q = normalize(sparse.csr_matrix(vec.transform(seqs_q)))
-    n_q = x_q.shape[0]
-    idx = np.zeros((n_q, TOP_K), np.int64)
-    sim = np.zeros((n_q, TOP_K), np.float32)
-    for s in tqdm(range(0, n_q, BLOCK), desc=f"    k={k} 邻居", unit="blk"):
-        e = min(s + BLOCK, n_q)
-        block = (x_q[s:e] @ x_tr.T).toarray()
-        part = np.argpartition(-block, TOP_K, axis=1)[:, :TOP_K]
-        idx[s:e] = part
-        sim[s:e] = np.take_along_axis(block, part, axis=1)
-    np.savez_compressed(cache, idx_val=idx, sim_val=sim)
-    return idx, sim
+def shared_filter(idx_q, sim_q, idx_tr, m):
+    n, k = idx_q.shape
+    keep_idx = np.full((n, k), -1, np.int64)
+    keep_sim = np.zeros((n, k), np.float32)
+    n_keep = np.zeros(n, np.int32)
+    fallback = 0
+    for i in tqdm(range(n), desc="    过滤", unit="q"):
+        nq = set(idx_q[i].tolist())
+        slot = 0
+        for j in range(k):
+            t = int(idx_q[i, j])
+            nt = set(idx_tr[t].tolist())
+            if len(nq & nt) >= m:
+                keep_idx[i, slot] = t
+                keep_sim[i, slot] = sim_q[i, j]
+                slot += 1
+        if slot == 0:
+            keep_idx[i, 0] = idx_q[i, 0]
+            keep_sim[i, 0] = sim_q[i, 0]
+            slot = 1
+            fallback += 1
+        n_keep[i] = slot
+    return keep_idx, keep_sim, n_keep, fallback
 
 
 def transfer(idx, sim, y_train):
-    n = idx.shape[0]
-    lab = y_train[idx[:, :TOP_K].ravel()].reshape(n, TOP_K, -1).astype(np.float32)
-    ww = np.maximum(sim[:, :TOP_K], 1e-7) ** 2
-    return (lab * ww[:, :, None]).sum(1) / ww.sum(1)[:, None]
+    n, k = idx.shape
+    out = np.zeros((n, y_train.shape[1]), np.float32)
+    for i in range(n):
+        valid = idx[i] >= 0
+        if not valid.any():
+            continue
+        lab = y_train[idx[i, valid]].astype(np.float32)
+        ww = np.maximum(sim[i, valid], 1e-7) ** 2
+        out[i] = (lab * ww[:, None]).sum(0) / ww.sum()
+    return out
 
 
 def build_i019(train_df, y_full, idx_train, idx_val):
@@ -117,7 +106,8 @@ def build_i019(train_df, y_full, idx_train, idx_val):
     with open(i011.TCK002_CONFIG, encoding="utf-8") as f:
         w = json.load(f)["best_w"]
     deep = w["t001a"] * t1["t001a_val"] + w["t002"] * t2["t002"] + w["cnn"] * vp["cnn"]
-    s011 = deep + i011.SIM_W * sim + BETA_RRF * i011.col_norm(i011.rrf_pair(deep, sim, K_RRF))
+    s011 = deep + i011.SIM_W * sim + BETA_RRF * i011.col_norm(
+        i011.rrf_pair(deep, sim, K_RRF))
     n = s011.shape[0]
     pi = y_train.mean(0).astype(np.float64)
     t_i011 = i011.search_t(s011, y_val)
@@ -133,7 +123,7 @@ def build_i019(train_df, y_full, idx_train, idx_val):
 def main():
     t0 = time.time()
     print("=" * 60)
-    print("CK005g: Murphy-5 缩减字母表 k-mer")
+    print("CK006e: 共享近邻过滤")
 
     train_df = pd.read_csv(os.path.join(i011.DATA_DIR, "train.csv"))
     label_cols = [c for c in train_df.columns if c.startswith("label_")]
@@ -146,48 +136,47 @@ def main():
     rec0 = i011.eval_ens(s019, y_val, hit, miss, "i019")
     print(f"  I019 F1={rec0['f1_100']:.4f}")
 
-    seqs = train_df["sequence"].values
-    print("[1/3] 映射 Murphy-5 ...")
-    red_tr = [reduce_seq(s) for s in tqdm(seqs[idx_train], desc="    train", unit="seq")]
-    red_va = [reduce_seq(s) for s in tqdm(seqs[idx_val], desc="    val", unit="seq")]
+    ck6 = np.load(os.path.join(i011.REL_DIR, "CK002_neigh_k6.npz"))
+    tr6 = np.load(os.path.join(i011.REL_DIR, "ECK003_neigh_train_k6.npz"))
+    idx_q, sim_q = ck6["idx_val"][:, :TOP], ck6["sim_val"][:, :TOP]
+    idx_tr = tr6["idx"][:, :TOP]
+    if len(idx_tr) != len(y_train):
+        raise RuntimeError(f"train 邻居 {len(idx_tr)} ≠ y_train {len(y_train)}")
 
     rows = [rec0]
     configs = {"i019": s019}
+    filt_stats = {}
     overlap = {}
 
-    print("[2/3] k-mer 邻居 + 混合 ...")
-    ck6 = np.load(os.path.join(i011.REL_DIR, "CK002_neigh_k6.npz"))
-    for k in tqdm(K_GRID, desc="    k", unit="k"):
-        cache = os.path.join(i011.REL_DIR, f"CK005g_neigh_k{k}.npz")
-        idx_n, sim_n = neigh_red(red_tr, red_va, k, cache)
-        red = transfer(idx_n, sim_n, y_train)
-        rec_r = i011.eval_ens(red, y_val, hit, miss, f"red_k{k}")
+    print("[1/2] m × γ ...")
+    for m in tqdm(M_GRID, desc="    m", unit="m"):
+        k_idx, k_sim, n_keep, n_fb = shared_filter(idx_q, sim_q, idx_tr, m)
+        kept = float(n_keep.mean())
+        same_top1 = float((k_idx[:, 0] == idx_q[:, 0]).mean())
+        filt_stats[f"m{m}"] = {
+            "mean_keep": round(kept, 3),
+            "fallback": int(n_fb),
+            "same_top1": round(same_top1, 4),
+        }
+        recip = transfer(k_idx, k_sim, y_train)
+        rec_r = i011.eval_ens(recip, y_val, hit, miss, f"recip_m{m}")
         rec_r["delta_i019"] = round(rec_r["f1_100"] - rec0["f1_100"], 6)
         rows.append(rec_r)
-        print(f"  red_k{k:d} 独立 F1={rec_r['f1_100']:.4f}")
-
-        top1_ov = float((idx_n[:, 0] == ck6["idx_val"][:, 0]).mean())
-        set_ov = []
-        for i in range(len(idx_n)):
-            a, b = set(idx_n[i, :5]), set(ck6["idx_val"][i, :5])
-            set_ov.append(len(a & b) / 5.0)
-        ov5 = float(np.mean(set_ov))
-        corr = float(np.corrcoef(red.ravel(), sim_kmer.ravel())[0, 1])
-        overlap[f"k{k}"] = {"top1": round(top1_ov, 4), "top5": round(ov5, 4),
-                            "corr_kmer": round(corr, 4)}
-        print(f"  vs CK002 k6: top1重叠={top1_ov:.3f} top5={ov5:.3f} corr={corr:.3f}")
-
-        red_n = i011.col_norm(red)
+        corr = float(np.corrcoef(recip.ravel(), sim_kmer.ravel())[0, 1])
+        overlap[f"m{m}"] = round(corr, 4)
+        print(f"  m={m} keep={kept:.2f} fallback={n_fb} top1同={same_top1:.3f} "
+              f"独立 F1={rec_r['f1_100']:.4f} corr={corr:.3f}")
+        rec_n = i011.col_norm(recip)
         for g in G_GRID:
-            mixed = (1.0 - g) * s019 + g * red_n
-            name = f"mix_k{k}_g{g:.2f}"
-            rec = i011.eval_ens(mixed, y_val, hit, miss, name, {"k": k, "gamma": g})
+            mixed = (1.0 - g) * s019 + g * rec_n
+            name = f"mix_m{m}_g{g:.2f}"
+            rec = i011.eval_ens(mixed, y_val, hit, miss, name, {"m": m, "gamma": g})
             rec["delta_i019"] = round(rec["f1_100"] - rec0["f1_100"], 6)
             rows.append(rec)
             configs[name] = mixed
-            print(f"  {name:18s} F1={rec['f1_100']:.4f} d={rec['delta_i019']:+.4f}")
+            print(f"  {name:16s} F1={rec['f1_100']:.4f} d={rec['delta_i019']:+.4f}")
 
-    print("[3/3] 半折核对...")
+    print("[2/2] 半折核对...")
     rng = np.random.RandomState(i011.RANDOM_STATE)
     n = len(y_val)
     perm = rng.permutation(n)
@@ -214,7 +203,7 @@ def main():
         oof_rows.append(rec)
         if name == "i019":
             oof_i019 = rec["f1_100"]
-        print(f"  oof_{name:18s} F1={rec['f1_100']:.4f}")
+        print(f"  oof_{name:16s} F1={rec['f1_100']:.4f}")
     for rec in oof_rows:
         rec["delta_i019"] = round(rec["f1_100"] - oof_i019, 6)
 
@@ -230,7 +219,8 @@ def main():
         "best_oof": best_oof,
         "gain_oof_vs_i019": round(gain, 6),
         "useful": useful,
-        "overlap": overlap,
+        "filter": filt_stats,
+        "corr_kmer": overlap,
         "grid": rows,
         "oof_grid": oof_rows,
         "seconds": round(time.time() - t0, 1),
