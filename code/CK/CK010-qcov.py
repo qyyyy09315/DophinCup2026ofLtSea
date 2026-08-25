@@ -1,0 +1,253 @@
+"""
+CK010-qcov — DIAMOND 查询覆盖度加权邻居，再重建 I011/I019
+================================================================
+依据:
+  - eggNOG-mapper: Huerta-Cepas et al., Mol Biol Evol 2017,
+    doi:10.1093/molbev/msx148。功能转移同时看 bitscore 与 query coverage。
+  - Buchfink, Xie & Huson, Nature Methods 2014, doi:10.1038/nmeth.3176
+    DIAMOND outfmt 可出 qcovhsp。
+  - 现有 TSV 无覆盖度；CK007 用 pident 砍邻居负；CK008 改聚合负。
+    本实验不砍邻居，用 bitscore × (qcov/100)^α 加权。
+自己的改法:
+  冻 deep / k-mer。val→idx_train 重跑 very-sensitive e=0.001，
+  outfmt 加 qcovhsp。w = bits · (qcov/100)^α，α∈{0.5,1.0,2.0}。
+  重建 I011/I019。另混 (1-γ)·I019 + γ·新 I019，γ∈{0.15,0.30}。
+  门槛相对 I019 半折 ≥ +0.001。
+用法:
+  python code/CK/CK010-qcov.py
+输出:
+  rel/CK010_report.json
+  rel/ck010_tmp/align_val_qcov.tsv
+"""
+
+import importlib.util
+import json
+import os
+import subprocess
+import time
+
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from tqdm import tqdm
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+def load_mod(name, rel):
+    spec = importlib.util.spec_from_file_location(
+        name, os.path.join(PROJECT_ROOT, "code", rel))
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m
+
+
+i011 = load_mod("i011", os.path.join("I", "I011-rrf.py"))
+i019 = load_mod("i019", os.path.join("I", "I019-sinkhorn.py"))
+
+REPORT_PATH = os.path.join(i011.REL_DIR, "CK010_report.json")
+TMP_DIR = os.path.join(i011.REL_DIR, "ck010_tmp")
+TSV_PATH = os.path.join(TMP_DIR, "align_val_qcov.tsv")
+DIAMOND = os.path.join(PROJECT_ROOT, "tools", "diamond", "diamond.exe")
+FA_VAL = os.path.join(i011.REL_DIR, "ck005_tmp", "val.fasta")
+DB_TRAIN = os.path.join(i011.REL_DIR, "ck005_tmp", "train.dmnd")
+
+K_RRF, BETA_RRF = 30, 0.50
+TAU_SK, RHO, ALPHA_SK = 0.20, 1.0, 0.60
+MAX_ACCEPT = 5
+EVALUE = 0.001
+A_GRID = (0.5, 1.0, 2.0)
+G_GRID = (0.15, 0.30)
+
+
+def run_diamond():
+    if os.path.exists(TSV_PATH) and os.path.getsize(TSV_PATH) > 1000:
+        print(f"  复用 {TSV_PATH}")
+        return
+    os.makedirs(TMP_DIR, exist_ok=True)
+    args = [
+        "blastp", "-d", DB_TRAIN, "-q", FA_VAL, "-o", TSV_PATH,
+        "--max-target-seqs", str(MAX_ACCEPT), "-e", str(EVALUE),
+        "--very-sensitive", "--threads", "8",
+        "--outfmt", "6", "qseqid", "sseqid", "bitscore", "evalue",
+        "pident", "qcovhsp",
+    ]
+    print("  DIAMOND val→train qcov ...", flush=True)
+    r = subprocess.run(
+        [DIAMOND] + args, capture_output=True, text=True,
+        encoding="utf-8", errors="replace")
+    if r.returncode != 0:
+        print((r.stderr or "")[-2000:])
+        raise RuntimeError("diamond 失败")
+
+
+def parse_qcov(tsv, query_ids, id_map, evalue=EVALUE):
+    idx = np.full((len(query_ids), MAX_ACCEPT), -1, np.int64)
+    bits = np.zeros((len(query_ids), MAX_ACCEPT), np.float32)
+    qcov = np.zeros((len(query_ids), MAX_ACCEPT), np.float32)
+    qpos = {q: i for i, q in enumerate(query_ids)}
+    with open(tsv) as f:
+        for line in f:
+            p = line.rstrip("\n").split("\t")
+            if len(p) < 6:
+                continue
+            q, t = p[0], p[1]
+            if q not in qpos or t not in id_map:
+                continue
+            i = qpos[q]
+            try:
+                bs, ev, qc = float(p[2]), float(p[3]), float(p[5])
+            except ValueError:
+                continue
+            if ev > evalue:
+                continue
+            j = 0
+            while j < MAX_ACCEPT and bits[i, j] > bs:
+                j += 1
+            if j < MAX_ACCEPT:
+                idx[i, j:] = np.roll(idx[i, j:], 1)
+                bits[i, j:] = np.roll(bits[i, j:], 1)
+                qcov[i, j:] = np.roll(qcov[i, j:], 1)
+                idx[i, j] = id_map[t]
+                bits[i, j] = bs
+                qcov[i, j] = qc
+    return idx, bits, qcov
+
+
+def build_fusion(deep, sim_bit, sim_kmer, y_train, y_val):
+    sim = i011.ALIGN_W * sim_bit + (1.0 - i011.ALIGN_W) * sim_kmer
+    s011 = deep + i011.SIM_W * sim + BETA_RRF * i011.col_norm(
+        i011.rrf_pair(deep, sim, K_RRF))
+    n = s011.shape[0]
+    pi = y_train.mean(0).astype(np.float64)
+    t_i011 = i011.search_t(s011, y_val)
+    row_m = np.maximum((s011 >= t_i011).sum(1).astype(np.float64), 1.0)
+    col_m = np.maximum(pi * n * RHO, 1e-6)
+    col_m *= row_m.sum() / col_m.sum()
+    ker = np.exp((s011 - s011.max(axis=1, keepdims=True)) / TAU_SK)
+    p = i019.sinkhorn(ker, row_m, col_m)
+    return i019.mix(s011, p, ALPHA_SK)
+
+
+def main():
+    t0 = time.time()
+    print("=" * 60)
+    print("CK010: qcovhsp 加权 DIAMOND 邻居")
+
+    train_df = pd.read_csv(os.path.join(i011.DATA_DIR, "train.csv"))
+    label_cols = [c for c in train_df.columns if c.startswith("label_")]
+    y_full = train_df[label_cols].values.astype(np.int8)
+    idx_train, idx_val = train_test_split(
+        np.arange(len(train_df)), test_size=0.2, random_state=i011.RANDOM_STATE)
+    y_train, y_val = y_full[idx_train], y_full[idx_val]
+    val_ids = train_df["protein_id"].values[idx_val]
+    train_map = {pid: i for i, pid in enumerate(train_df["protein_id"].values[idx_train])}
+
+    run_diamond()
+    idx_v, bits_v, qcov_v = parse_qcov(TSV_PATH, val_ids, train_map)
+    hit = idx_v[:, 0] >= 0
+    miss = ~hit
+    valid = idx_v >= 0
+    print(f"  hit {int(hit.sum())}/{len(hit)}  qcov "
+          f"med={float(np.median(qcov_v[valid])):.1f} "
+          f"p25={float(np.percentile(qcov_v[valid], 25)):.1f} "
+          f"p75={float(np.percentile(qcov_v[valid], 75)):.1f}")
+
+    sim_bit = i011.agg_labels(idx_v, bits_v, y_train)
+    sim_kmer = i011.build_kmer_val(y_train)
+    vp = np.load(os.path.join(i011.REL_DIR, "TC003_val_probs.npz"))
+    t1 = np.load(os.path.join(i011.REL_DIR, "TCK001_t001a_probs.npz"))
+    t2 = np.load(os.path.join(i011.REL_DIR, "T002_val_probs.npz"))
+    with open(i011.TCK002_CONFIG, encoding="utf-8") as f:
+        w = json.load(f)["best_w"]
+    deep = w["t001a"] * t1["t001a_val"] + w["t002"] * t2["t002"] + w["cnn"] * vp["cnn"]
+
+    s019 = build_fusion(deep, sim_bit, sim_kmer, y_train, y_val)
+    rec0 = i011.eval_ens(s019, y_val, hit, miss, "i019")
+    print(f"  I019 F1={rec0['f1_100']:.4f}")
+
+    rows = [rec0]
+    configs = {"i019": s019}
+    corr = {}
+
+    print("[1/2] α × γ ...")
+    for a in tqdm(A_GRID, desc="    α", unit="a"):
+        ww = bits_v * np.power(np.clip(qcov_v / 100.0, 0.0, 1.0), a)
+        sim_q = i011.agg_labels(idx_v, ww, y_train)
+        c = float(np.corrcoef(sim_q.ravel(), sim_bit.ravel())[0, 1])
+        corr[f"a{a:.1f}"] = round(c, 4)
+        s_f = build_fusion(deep, sim_q, sim_kmer, y_train, y_val)
+        rec_f = i011.eval_ens(s_f, y_val, hit, miss, f"filt_a{a:.1f}", {"alpha": a})
+        rec_f["delta_i019"] = round(rec_f["f1_100"] - rec0["f1_100"], 6)
+        rec_f["corr_bit"] = corr[f"a{a:.1f}"]
+        rows.append(rec_f)
+        configs[f"filt_a{a:.1f}"] = s_f
+        print(f"  filt_a{a:.1f} F1={rec_f['f1_100']:.4f} d={rec_f['delta_i019']:+.4f} "
+              f"corr={c:.3f}")
+        s_n = i011.col_norm(s_f)
+        for g in G_GRID:
+            mixed = (1.0 - g) * s019 + g * s_n
+            name = f"mix_a{a:.1f}_g{g:.2f}"
+            rec = i011.eval_ens(mixed, y_val, hit, miss, name, {"alpha": a, "gamma": g})
+            rec["delta_i019"] = round(rec["f1_100"] - rec0["f1_100"], 6)
+            rows.append(rec)
+            configs[name] = mixed
+            print(f"  {name:20s} F1={rec['f1_100']:.4f} d={rec['delta_i019']:+.4f}")
+
+    print("[2/2] 半折核对...")
+    rng = np.random.RandomState(i011.RANDOM_STATE)
+    n = len(y_val)
+    perm = rng.permutation(n)
+    mid = n // 2
+    folds = [perm[:mid], perm[mid:]]
+
+    def oof_pred(score):
+        pred = np.zeros_like(score, dtype=np.int8)
+        for i, hold in enumerate(folds):
+            fit = folds[1 - i]
+            th = i011.search_t(score[fit], y_val[fit])
+            pred[hold] = (score[hold] >= th).astype(np.int8)
+        return pred
+
+    oof_rows = []
+    oof_i019 = None
+    for name, score in tqdm(configs.items(), desc="    OOF", unit="cfg"):
+        pred = oof_pred(score)
+        rec = {
+            "name": f"oof_{name}",
+            "f1_100": round(i011.macro_f1(pred, y_val), 6),
+            "f1_miss": round(i011.macro_f1(pred[miss], y_val[miss]), 6),
+        }
+        oof_rows.append(rec)
+        if name == "i019":
+            oof_i019 = rec["f1_100"]
+        print(f"  oof_{name:20s} F1={rec['f1_100']:.4f}")
+    for rec in oof_rows:
+        rec["delta_i019"] = round(rec["f1_100"] - oof_i019, 6)
+
+    cand = [r for r in oof_rows if r["name"] != "oof_i019"]
+    best_oof = max(cand, key=lambda r: r["f1_100"]) if cand else oof_rows[0]
+    gain = best_oof["f1_100"] - oof_i019
+    useful = bool(gain >= 0.001)
+    print(f"  OOF 最优 {best_oof['name']} F1={best_oof['f1_100']:.4f} "
+          f"vs I019 {gain:+.4f} → {'有效' if useful else '无增益'}")
+
+    report = {
+        "baseline_i019": rec0,
+        "best_oof": best_oof,
+        "gain_oof_vs_i019": round(gain, 6),
+        "useful": useful,
+        "corr_bit": corr,
+        "grid": rows,
+        "oof_grid": oof_rows,
+        "seconds": round(time.time() - t0, 1),
+    }
+    os.makedirs(i011.REL_DIR, exist_ok=True)
+    with open(REPORT_PATH, "w", encoding="utf-8") as f:
+        json.dump(report, f, ensure_ascii=False, indent=2)
+    print(f"  报告: {REPORT_PATH}")
+    print(f"  用时 {report['seconds']}s")
+
+
+if __name__ == "__main__":
+    main()
