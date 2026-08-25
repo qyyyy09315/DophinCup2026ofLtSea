@@ -6,12 +6,12 @@
 
 | 口径 | 编号 | 分数 | 说明 |
 | --- | --- | --- | --- |
-| **平台最佳** | I008 | **45.3902**（AUC 0.711026） | 门控后再截 hit 过预测；本地仅 +0.0008 带到平台 |
-| **本地融合锁** | I019 | val F1 **0.4449** / OOF 较 I011 **+0.0011** | Sinkhorn τ=0.20 ρ=1.0 α=0.60，叠在 I011 上 |
-| **今日提交** | I011 | val F1 **0.4443** / OOF 较 CK005a **+0.0055** | 实例内 deep vs sim RRF，k=30 β=0.50 |
+| **平台最佳** | I011 | **45.6634**（AUC 0.713682） | 实例内 deep vs sim RRF，k=30 β=0.50 |
+| **本地融合锁** | I019 | val F1 **0.4449** / OOF 较 I011 **+0.0011** | Sinkhorn τ=0.20 ρ=1.0 α=0.60，叠在 I011 上；提交文件已放桌面，尚未交平台 |
+| 平台对照 | I008 | 45.3902（AUC 0.711026） | 门控后再截 hit 过预测 |
 | 平台对照 | CK005a | 45.3039（AUC 0.7154） | DIAMOND `--very-sensitive` e=0.001 + 多 k |
 
-ECK001 本地 0.4558 为 val 自匹配泄漏，提交 43.24 作废。I019 提交文件已生成，尚未交平台。
+ECK001 本地 0.4558 为 val 自匹配泄漏，提交 43.24 作废。缓存后处理 / 冻结 PLM / 异构 CNN 平均均未过 OOF +0.001。下一步是 C004 探针（等上行）与分析报告。
 
 ## 融合链（锁）
 
@@ -54,20 +54,13 @@ SCut: 逐标签 100 档阈值，目标 Macro F1
 ```bash
 # 环境：仓库 .venv，Python 3.11 + PyTorch（不要用系统 Python 3.14）
 # 数据：竞赛 train.csv / test.csv 放入 data/
-
 # 需先有 rel/ 中的邻居缓存与单模型概率（见 doc/日志/、doc/代码索引.md）
 
-# 本地融合锁（I019，叠在 I011 上）
-python code/I/I019-sinkhorn.py --gen-sub
-
-# 今日提交（I011 RRF）
+# 平台锁 I011
 python code/I/I011-rrf.py --gen-sub
-```
 
-平台当前最佳是 I008，不是 CK005a：
-
-```bash
-python code/I/I008-gated-clip.py --gen-sub
+# 本地锁 I019（叠在 I011 上，尚未交平台）
+python code/I/I019-sinkhorn.py --gen-sub
 ```
 
 ## 关键方法
@@ -77,11 +70,11 @@ python code/I/I008-gated-clip.py --gen-sub
 - **四路 deep**：T001a + T002 + CNN，权重来自 `models/tck002-ensemble.json`
 - **I011 RRF**：每条蛋白把 500 标签按 deep、按 sim 各排一次名，`1/(30+rank)` 相加
 - **I019 Sinkhorn**：行对齐 SCut 基数、列对齐标签先验，再与 I011 凸组合
-- **I008**：半折 Logistic 门控 hit 过预测后按比例截；平台增益来自这里
+- **I008**：半折 Logistic 门控 hit 过预测后按比例截；曾是平台最佳，已被 I011 超过
 
 ## 已关闭（不要重开）
 
-CNN 输入增强（Mixup / CutMix / spanmask）、PLM LoRA、共现图、蛋白图 LGC、二部图 LightGCN、k-mer 变体（窗口 / 缩减字母表 / 间隔种子 / TF-IDF / IC 邻居权）、PU / F-β / MMR / 段相关 / 融合前匹配、I011 字母派生、C004 bagging。细节见 `doc/日志/待办.md` 已完成节。
+CNN 输入增强（Mixup / CutMix / spanmask）、测试时读出（TTA / MC Dropout / AdaBN）、PLM LoRA / 冻结嵌入 kNN、共现图、蛋白图 LGC、二部图 LightGCN、k-mer 变体、比对权改写、PU / F-β / MMR / 段相关 / 融合前匹配、I011 字母派生、异构 CNN 平均、miss 分流。C004 同结构多种子探针未跑。细节见 `doc/日志/待办.md` 已完成节。
 
 ## 备注
 
