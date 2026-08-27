@@ -1,6 +1,8 @@
 """
-C004-bagging — C002b 多种子 Deep Ensemble（换一元 CNN 分数）
+C004a — C002b 多种子 Deep Ensemble 探针（换一元 CNN 分数）
 ================================================================
+C004 是 2026-08-19 腾讯表占位（关闭，未跑）。本轮真正训练记 C004a，
+不复用 C004 编号。脚本文件名仍 C004-bagging.py。
 依据:
   - Lakshminarayanan, Pritzel & Blundell, NeurIPS 2017,
     arXiv:1612.01474。随机初始化的独立网络平均，校准与
@@ -20,9 +22,9 @@ C004-bagging — C002b 多种子 Deep Ensemble（换一元 CNN 分数）
   python code/C/C004-bagging.py --seeds=1,2,3,5  # 满配
   python code/C/C004-bagging.py --epochs=80 --gen-sub
 输出:
-  rel/C004_bag_report.json
-  rel/C004_bag.npz
-  models/c004-seed{k}.pt
+  rel/C004a_bag_report.json
+  rel/C004a_bag.npz
+  models/c004a-seed{k}.pt
 """
 
 import importlib.util
@@ -103,7 +105,7 @@ def train_seed(seed, n_epochs, lazy_tokens=False):
         batch_size=BATCH, shuffle=False, num_workers=0, collate_fn=c002b.collate_onehot)
 
     model = c002b.MultiScaleCNNv3(n_labels=n_labels).cuda()
-    ckpt = f"{MODEL_DIR}/c004-seed{seed}.pt"
+    ckpt = f"{MODEL_DIR}/c004a-seed{seed}.pt"
     if os.path.exists(ckpt):
         print(f"  已有 checkpoint，跳过训练: {ckpt}", flush=True)
         model.load_state_dict(torch.load(ckpt, map_location="cuda"))
@@ -135,9 +137,9 @@ def train_seed(seed, n_epochs, lazy_tokens=False):
             print(f"  ep{ep+1}: loss={total_loss/len(tr_loader.dataset):.4f} F1(0.5)={f1:.4f}", flush=True)
             if f1 > best_f1:
                 best_f1 = f1
-                torch.save(model.state_dict(), f"{MODEL_DIR}/c004-seed{seed}.pt")
+                torch.save(model.state_dict(), f"{MODEL_DIR}/c004a-seed{seed}.pt")
 
-    ckpt = f"{MODEL_DIR}/c004-seed{seed}.pt"
+    ckpt = f"{MODEL_DIR}/c004a-seed{seed}.pt"
     if os.path.exists(ckpt):
         model.load_state_dict(torch.load(ckpt, map_location="cuda"))
     probs_val = evaluate_probs(model, va_loader)
@@ -266,7 +268,7 @@ def main():
 
     t0 = time.time()
     print("=" * 60)
-    print(f"C004-bagging: 多种子 CNN bagging | 种子={seeds_new} 各{n_epochs}ep")
+    print(f"C004a: 多种子 CNN bagging | 种子={seeds_new} 各{n_epochs}ep")
 
     # ─── 1. 读现有 seed=42 probs ───
     print("[1/4] 读取 seed=42 概率 (TC003)...")
@@ -286,7 +288,7 @@ def main():
     n_seeds = len(probs["val"])
     cnn_bag_val = np.mean(probs["val"], axis=0)
     cnn_bag_test = np.mean(probs["test"], axis=0)
-    np.savez_compressed(f"{REL_DIR}/C004_bag.npz",
+    np.savez_compressed(f"{REL_DIR}/C004a_bag.npz",
                          val=cnn_bag_val, test=cnn_bag_test,
                          val_seeds=np.stack(probs["val"], axis=-1),
                          test_seeds=np.stack(probs["test"], axis=-1))
@@ -397,14 +399,14 @@ def main():
         os.makedirs(SUB_DIR, exist_ok=True)
         sub = test_df[["protein_id"]].copy()
         sub = pd.concat([sub, pd.DataFrame(y_pred, columns=label_cols, index=sub.index)], axis=1)
-        sub_path = os.path.join(SUB_DIR, "submission_C004_bag.csv")
+        sub_path = os.path.join(SUB_DIR, "submission_C004a_bag.csv")
         sub.to_csv(sub_path, index=False)
         report["submission"] = sub_path
         print(f"  提交: {sub_path}")
 
-    with open(f"{REL_DIR}/C004_bag_report.json", "w", encoding="utf-8") as f:
+    with open(f"{REL_DIR}/C004a_bag_report.json", "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
-    print(f"  报告: {REL_DIR}/C004_bag_report.json")
+    print(f"  报告: {REL_DIR}/C004a_bag_report.json")
     print(f"  种子数: {n_seeds} (42 + {seeds_new})")
     print("=" * 60)
     print(f"完成! 总耗时: {time.time() - t0:.0f}s")

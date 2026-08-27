@@ -2,16 +2,17 @@
 
 多标签蛋白质功能预测（500 个匿名 GO 类标签，Macro F1）竞赛方案。四路深度概率与序列邻居融合，再用 Reciprocal Rank Fusion 与 Sinkhorn 双边匹配做后处理。
 
-## 当前锁定（2026-08-25）
+## 当前锁定（2026-08-28）
 
 | 口径 | 编号 | 分数 | 说明 |
 | --- | --- | --- | --- |
-| **平台最佳** | I011 | **45.6634**（AUC 0.713682） | 实例内 deep vs sim RRF，k=30 β=0.50 |
-| **本地融合锁** | I019 | val F1 **0.4449** / OOF 较 I011 **+0.0011** | Sinkhorn τ=0.20 ρ=1.0 α=0.60，叠在 I011 上；提交文件已放桌面，尚未交平台 |
+| **平台最佳** | C011a | **45.7665**（AUC 0.713251） | 8.26 提交；C002b×C005 α=0.50 换 CNN 路后重建 I019 |
+| 平台对照 | I019 | 45.7201（AUC 0.71289） | 8.25 提交；Sinkhorn τ=0.20 ρ=1.0 α=0.60，叠在 I011 上 |
+| 平台对照 | I011 | 45.6634（AUC 0.713682） | 实例内 deep vs sim RRF，k=30 β=0.50 |
 | 平台对照 | I008 | 45.3902（AUC 0.711026） | 门控后再截 hit 过预测 |
 | 平台对照 | CK005a | 45.3039（AUC 0.7154） | DIAMOND `--very-sensitive` e=0.001 + 多 k |
 
-ECK001 本地 0.4558 为 val 自匹配泄漏，提交 43.24 作废。缓存后处理 / 冻结 PLM / 异构 CNN 平均均未过 OOF +0.001。下一步是 C004 探针（等上行）与分析报告。
+ECK001 本地 0.4558 为 val 自匹配泄漏，提交 43.24 作废。缓存后处理 / 冻结 PLM / 异构 CNN 平均均未过 OOF +0.001。C013–C016 已关。下一步 C017 miss 过采样。
 
 ## 融合链（锁）
 
@@ -56,11 +57,8 @@ SCut: 逐标签 100 档阈值，目标 Macro F1
 # 数据：竞赛 train.csv / test.csv 放入 data/
 # 需先有 rel/ 中的邻居缓存与单模型概率（见 doc/日志/、doc/代码索引.md）
 
-# 平台锁 I011
-python code/I/I011-rrf.py --gen-sub
-
-# 本地锁 I019（叠在 I011 上，尚未交平台）
-python code/I/I019-sinkhorn.py --gen-sub
+# 平台锁 C011a（C002b×C005 α=0.50 接到 I019，不重训）
+python code/C/C011a-gensub.py
 ```
 
 ## 关键方法
@@ -74,7 +72,7 @@ python code/I/I019-sinkhorn.py --gen-sub
 
 ## 已关闭（不要重开）
 
-CNN 输入增强（Mixup / CutMix / spanmask）、测试时读出（TTA / MC Dropout / AdaBN）、PLM LoRA / 冻结嵌入 kNN、共现图、蛋白图 LGC、二部图 LightGCN、k-mer 变体、比对权改写、PU / F-β / MMR / 段相关 / 融合前匹配、I011 字母派生、异构 CNN 平均、miss 分流。C004 同结构多种子探针未跑。细节见 `doc/日志/待办.md` 已完成节。
+CNN 输入增强（Mixup / CutMix / spanmask）、测试时读出（TTA / MC Dropout / AdaBN）、PLM LoRA / 冻结嵌入 kNN、共现图、蛋白图 LGC、二部图 LightGCN、k-mer 变体、比对权改写、PU / F-β / MMR / 段相关 / 融合前匹配、I011 字母派生、异构 CNN 平均、miss 分流、短序列 Transformer 专家、深层残差 CNN、同结构多种子、Jaccard 对比 / 同骨干度量学习、训练时同源样本权、同源 FiLM 条件、对 sim 残差拟合。细节见 `doc/日志/待办.md` 已完成节。
 
 ## 备注
 
