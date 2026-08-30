@@ -12,7 +12,7 @@
 | 平台对照 | I008 | 45.3902（AUC 0.711026） | 门控后再截 hit 过预测 |
 | 平台对照 | CK005a | 45.3039（AUC 0.7154） | DIAMOND `--very-sensitive` e=0.001 + 多 k |
 
-ECK001 本地 0.4558 为 val 自匹配泄漏，提交 43.24 作废。缓存后处理 / 冻结 PLM / 异构 CNN 平均均未过 OOF +0.001。C013–C016 已关。下一步 C017 miss 过采样。
+ECK001 本地 0.4558 为 val 自匹配泄漏，提交 43.24 作废。缓存后处理 / 冻结 PLM / 异构 CNN 平均均未过 OOF +0.001。C013–C018、T004、C022 已关。下一步 C023：C005→C002b 蒸馏。
 
 ## 融合链（锁）
 
@@ -72,7 +72,7 @@ python code/C/C011a-gensub.py
 
 ## 已关闭（不要重开）
 
-CNN 输入增强（Mixup / CutMix / spanmask）、测试时读出（TTA / MC Dropout / AdaBN）、PLM LoRA / 冻结嵌入 kNN、共现图、蛋白图 LGC、二部图 LightGCN、k-mer 变体、比对权改写、PU / F-β / MMR / 段相关 / 融合前匹配、I011 字母派生、异构 CNN 平均、miss 分流、短序列 Transformer 专家、深层残差 CNN、同结构多种子、Jaccard 对比 / 同骨干度量学习、训练时同源样本权、同源 FiLM 条件、对 sim 残差拟合。细节见 `doc/日志/待办.md` 已完成节。
+CNN 输入增强（Mixup / CutMix / spanmask）、测试时读出（TTA / MC Dropout / AdaBN）、PLM LoRA / 冻结嵌入 kNN、共现图、蛋白图 LGC、二部图 LightGCN、k-mer 变体、比对权改写、PU / F-β / MMR / 段相关 / 融合前匹配、I011 字母派生、异构 CNN 平均、miss 分流、短序列 Transformer 专家、深层残差 CNN、同结构多种子、Jaccard 对比 / 同骨干度量学习、训练时同源样本权、同源 FiLM 条件、对 sim 残差拟合、miss 过采样、CNN / Transformer 残基 SS 辅任务、独立 SS 序列 CNN。细节见 `doc/日志/待办.md` 已完成节。
 
 ## 备注
 

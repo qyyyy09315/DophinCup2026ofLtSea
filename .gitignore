@@ -25,3 +25,9 @@ tools/diamond/*.zip
 # 临时/训练产物
 catboost_info/
 baseline-v2.ipynb
+
+# Rigor Explore 本机产物（含 worktree 路径，结论已写入 doc/日志）
+analysis_outputs/
+explore_outputs/
+sources/
+research_campaign.json
