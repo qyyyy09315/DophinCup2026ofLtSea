@@ -15,6 +15,7 @@ E006-esm2-650-lora — ESM2-650M + LoRA 多标签分类（换骨干，不重开 
   每 400 步与每 epoch 写 models/e006-650-lora.last.pt（含 epoch/step）。
   无 --fresh 时自动从 last 的下一 epoch、下一步续；Ctrl+C 也会落盘。
   独立门槛：F1(0.5) 超 C002b 0.2714。过了再接到 C011a 看 OOF +0.001。
+  结果（2026-09-02）：F1(0.5)=0.0301，未超，关闭 CLS 头；下一刀 E006a。
 用法:
   python code/E/E006-esm2-650-lora.py
   python code/E/E006-esm2-650-lora.py --fresh
@@ -193,6 +194,11 @@ def save_last(path, model, opt, sched, scaler, epoch, step, best_f1, best_epoch,
     }, path)
 
 
+def load_ckpt(path, map_location="cuda"):
+    # PyTorch 2.6 默认 weights_only=True，last.pt 含 optimizer/scaler 的 numpy 标量
+    return torch.load(path, map_location=map_location, weights_only=False)
+
+
 @torch.no_grad()
 def predict_probs(model, loader):
     model.eval()
@@ -293,7 +299,7 @@ def main():
     if fresh and os.path.isfile(LAST_PATH):
         print("  --fresh：忽略已有 last.pt")
     if do_resume:
-        ckpt = torch.load(LAST_PATH, map_location="cuda")
+        ckpt = load_ckpt(LAST_PATH, map_location="cuda")
         model.load_state_dict(ckpt["state_dict"])
         opt.load_state_dict(ckpt["optimizer"])
         sched.load_state_dict(ckpt["scheduler"])
@@ -416,7 +422,7 @@ def main():
 
     print("[4/4] 评估...")
     if os.path.isfile(BEST_PATH):
-        ckpt = torch.load(BEST_PATH, map_location="cuda")
+        ckpt = load_ckpt(BEST_PATH, map_location="cuda")
         model.load_state_dict(ckpt["state_dict"])
     probs_val = predict_probs(model, va_loader)
     f1_05 = macro_f1(probs_val, y_val, 0.5)

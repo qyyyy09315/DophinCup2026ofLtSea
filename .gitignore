@@ -31,3 +31,10 @@ analysis_outputs/
 explore_outputs/
 sources/
 research_campaign.json
+
+# 参考文献全文 PDF（本地备查，不上 GitHub；清单/README 可提交）
+doc/文献/*.pdf
+doc/文献/download-log.json
+doc/文献/download-log.rebuilt.json
+doc/文献/manifest.json
+doc/文献/清单.md.bak
