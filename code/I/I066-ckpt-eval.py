@@ -70,20 +70,27 @@ def main():
     ths = search_scut(probs, y_va)
     f1 = macro_f1(probs, y_va, ths)
     auc = roc_auc_score(y_va, probs, average="macro")
+    preds = (probs >= ths).astype(bool); yb = y_va.astype(bool)
+    tp = (preds & yb).sum(0); fp = (preds & ~yb).sum(0); fn = (~preds & yb).sum(0)
+    pp = np.where(tp + fp > 0, tp / np.maximum(tp + fp, 1), 0.0)
+    rr = np.where(tp + fn > 0, tp / np.maximum(tp + fn, 1), 0.0)
+    rec, prec = float(np.mean(rr)), float(np.mean(pp))
 
     print("\n" + "=" * 70)
     print(f"  Residue-attention branch (ckpt: {os.path.basename(CKPT)}):")
-    print(f"    Standalone SCut F1 = {f1:.4f} | AUC = {auc:.4f}")
+    print(f"    Standalone SCut F1 = {f1:.4f} | AUC = {auc:.4f} | R = {rec:.4f} | P = {prec:.4f}")
     print(f"  对照基准:")
     print(f"    1664D 均值池化多种子 (I064): F1 0.2729 | AUC 0.7947")
     print(f"    E004a 旧注意力池化 (历史)  : F1 0.1518")
     print("=" * 70)
 
     out = {"ckpt": os.path.basename(CKPT), "suct_f1": f1, "auc": auc,
+           "recall": rec, "precision": prec,
            "ref_1664d_multiseed": {"f1": 0.2729, "auc": 0.7947}}
+    np.savez_compressed(os.path.join(REL_DIR, "resattn_ckpt_val_probs.npz"), val=probs)
     with open(os.path.join(REL_DIR, "resattn_ckpt_eval.json"), "w", encoding="utf-8") as f:
         json.dump(out, f, indent=2)
-    print(f"\n  Saved: rel/resattn_ckpt_eval.json")
+    print(f"\n  Saved: rel/resattn_ckpt_eval.json + resattn_ckpt_val_probs.npz")
     print(f"  Done in {(time.time()-t0)/60:.1f} min")
 
 

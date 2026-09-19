@@ -36,6 +36,18 @@ def macro_f1_from_pred(preds, y):
     return float(np.mean(np.where(p + r > 0, 2 * p * r / np.maximum(p + r, 1e-9), 0.0)))
 
 
+def macro_pr_from_pred(preds, y):
+    """(macro R, macro P, macro AUC-of-binary-decision)"""
+    preds = preds.astype(bool); yb = y.astype(bool)
+    tp = (preds & yb).sum(0); fp = (preds & ~yb).sum(0); fn = (~preds & yb).sum(0)
+    p = np.where(tp + fp > 0, tp / np.maximum(tp + fp, 1), 0.0)
+    r = np.where(tp + fn > 0, tp / np.maximum(tp + fn, 1), 0.0)
+    fpr = np.where(tp + fp > 0, fp / np.maximum((~yb).sum(0), 1), 0.0)
+    tpr = r
+    auc = float(np.mean((tpr - fpr + 1.0) / 2.0))
+    return float(np.mean(r)), float(np.mean(p)), auc
+
+
 def rcut_predict(S, k):
     """按每样本基数 k (向量) 取 top-k"""
     n = S.shape[0]
@@ -175,6 +187,10 @@ def main():
     res = {"f1_scut": f1_scut, "f1_oracle_rcut": f1_oracle,
            "sensitivity": sens, "mae_profile": mae, "mae_profile_esm": mae2,
            "f1_rcut_profile": f1_hat, "f1_rcut_esm": f1_hat2, "mae_current": mae_cur}
+    r1, p1, a1 = macro_pr_from_pred(rcut_predict(S, pred_card), y_va)
+    r2, p2, a2 = macro_pr_from_pred(rcut_predict(S, pred_card2), y_va)
+    res.update({"rcut_profile_recall": r1, "rcut_profile_precision": p1, "rcut_profile_auc": a1,
+                "rcut_esm_recall": r2, "rcut_esm_precision": p2, "rcut_esm_auc": a2})
     with open(REPORT, "w", encoding="utf-8") as f:
         json.dump(res, f, indent=2, ensure_ascii=False)
     print(f"\n  Report: {REPORT}")
