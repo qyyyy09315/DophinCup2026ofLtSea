@@ -24,11 +24,11 @@ plt.rcParams['ytick.major.width'] = 1.0
 # ------------------------------------------------------------------------------
 # Nature 经典低饱和度高雅调色板 (Nature Reviews / Biotech Color Tokens)
 # ------------------------------------------------------------------------------
-NAVY    = "#1B365D"  # 主色：深海军蓝
-TEAL    = "#008080"  # 辅色：高雅松石青
-CORAL   = "#C35A48"  # 强调色：低饱和珊瑚赭红
-GOLD    = "#D99B26"  # 警告/亮点色：深琥珀金
-SLATE   = "#4A5568"  # 中性灰色：石板灰
+NAVY    = "#0072B2"  # 主色：Okabe-Ito 蓝 (Wong 2011 色盲安全)
+TEAL    = "#009E73"  # 辅色：Okabe-Ito 蓝绿
+CORAL   = "#D55E00"  # 强调色：Okabe-Ito 朱红
+GOLD    = "#E69F00"  # 警告/亮点色：Okabe-Ito 橙
+SLATE   = "#6E6E6E"  # 中性灰色
 MUTED_B = "#6B8EAE"  # 次级蓝灰
 LIGHT_B = "#EBF3F9"  # 浅背景淡蓝
 LIGHT_G = "#EBF5F0"  # 浅背景淡绿
@@ -212,7 +212,7 @@ ax.text(89, 54.5, "Dual-Marginal\nOptimal Transport", ha="center", va="center", 
 ax.text(89, 44.5, "Sinkhorn-Knopp\nRow: Instance Cardinality\nCol: Global Label Priors", ha="center", va="center", fontsize=7.5, color=SLATE)
 ax.text(89, 35, "$S_{final} = 0.4 S_{rrf} + 0.6 P_{sk}$\nDecision: SCut Thresholds", ha="center", va="center", fontsize=7.5, fontweight="bold", color=CORAL)
 
-plt.title("Figure 2. Schematic Architecture and Inference Flow of the HDMR-Sinkhorn Framework", fontsize=12, fontweight="bold", color=DARK_1, pad=12)
+pass  # 图题由文档题注承担，图内不嵌标题（官方模板）
 plt.tight_layout()
 fig2_svg = os.path.join(FIG_DIR, "fig2_architecture_flowchart.svg")
 fig2_png = os.path.join(FIG_DIR, "fig2_architecture_flowchart.png")
@@ -323,7 +323,7 @@ v_m7 = get_radar_coords(results["M7_HDMR_Sinkhorn"]) + [get_radar_coords(results
 ax.plot(angles, v_m7, linewidth=2.4, linestyle='solid', label="M7: HDMR-Sinkhorn (Ours)", color=NAVY)
 ax.fill(angles, v_m7, NAVY, alpha=0.22)
 
-plt.title("Figure 4. Comprehensive Radar Profiling Across Homology, Deep, and Regularized Frameworks", size=10.5, fontweight="bold", pad=28, color=DARK_1)
+pass  # 图题由文档题注承担，图内不嵌标题（官方模板）
 plt.legend(loc='lower center', bbox_to_anchor=(0.5, -0.16), ncol=2, fontsize=8.5, frameon=True, edgecolor="#CCCCCC")
 plt.tight_layout()
 
@@ -415,7 +415,7 @@ ax.bar(x + width,   m6_strata, width, label="M6: Rank Fusion (I011)", color=CORA
 ax.bar(x + 2*width, m7_strata, width, label="M7: HDMR-Sinkhorn (Ours)", color=NAVY, edgecolor=DARK_1, lw=0.7)
 
 ax.set_ylabel("Stratified Macro F1 Score", fontsize=10, fontweight="bold", color=DARK_1)
-ax.set_title("Figure 6. Performance Across Label Frequency Strata (Head, Medium, Tail)", fontsize=11, fontweight="bold", color=DARK_1, pad=12)
+pass  # 图题由文档题注承担，图内不嵌标题（官方模板）
 ax.set_xticks(x)
 ax.set_xticklabels(strata, fontsize=9.5, fontweight="bold", color=DARK_1)
 ax.set_ylim(0.15, 0.58)

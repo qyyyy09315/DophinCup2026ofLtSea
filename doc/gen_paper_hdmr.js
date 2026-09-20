@@ -115,7 +115,7 @@ function figCap(text) {
   return new Paragraph({
     alignment: AlignmentType.CENTER,
     spacing: { before: 140, after: 200, line: 312 },
-    keepNext: true,
+    keepLines: true,
     children: [new TextRun({ text, font: HEI, bold: true, size: CAP, color: "000000" })],
   });
 }
@@ -216,6 +216,7 @@ function imgPara(imgPath, w, h) {
   const buf = fs.readFileSync(imgPath);
   return new Paragraph({
     alignment: AlignmentType.CENTER,
+    keepNext: true,
     spacing: { before: 180, after: 100 },
     children: [
       new ImageRun({
@@ -261,6 +262,18 @@ const refs = [
   "[30] FRIEDBERG I. Automated protein function prediction: the genomic challenge[J]. Briefings in Bioinformatics, 2006, 7(3): 225-242.",
   "[31] CHOU K C. Prediction of protein cellular attributes using pseudo-amino acid composition[J]. Proteins, 2001, 43(3): 246-255.",
   "[32] ELNAGGAR A, HEINZINGER M, DALLAGO C, et al. ProtTrans: toward understanding the language of life through self-supervised learning[J]. IEEE Transactions on Pattern Analysis and Machine Intelligence, 2022, 44(10): 7112-7127.",
+  "[33] YUAN Z, ZHU D, QIU Z-H, et al. LibAUC: a deep learning library for X-risk optimization[C]//Proceedings of the 29th ACM SIGKDD Conference on Knowledge Discovery and Data Mining. New York: ACM, 2023: 6480-6491.",
+  "[34] ZHU D, LI G, WANG B, et al. When AUC meets DRO: optimizing partial AUC for deep learning with non-convex convergence guarantee[C]//Proceedings of the 39th International Conference on Machine Learning (ICML). 2022: 27548-27573.",
+  "[35] KUNCHEVA L I, WHITAKER C J. Measures of diversity in classifier ensembles and their relationship with the ensemble accuracy[J]. Machine Learning, 2003, 51(2): 181-207.",
+  "[36] BROWN G, KUNCHEVA L I. \u201cGood\u201d and \u201cbad\u201d diversity in majority vote ensembles[C]//Multiple Classifier Systems (MCS). Berlin: Springer, 2010: 124-133.",
+  "[37] XIE M-K, XIAO J, LIU H-Z, et al. Class-distribution-aware pseudo-labeling for semi-supervised multi-label learning[C]//Advances in Neural Information Processing Systems (NeurIPS 36). 2023.",
+  "[38] XIE Q, LUONG M-T, HOVY E, et al. Self-training with noisy student improves ImageNet classification[C]//Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR). 2020: 10687-10698.",
+  "[39] FURLANELLO T, LIPTON Z, TSCHANNEN M, et al. Born again neural networks[C]//Proceedings of the 35th International Conference on Machine Learning (ICML). 2018: 1607-1616.",
+  "[40] ARAZO E, ORTEGO D, ALBERT P, et al. Pseudo-labeling and confirmation bias in deep semi-supervised learning[C]//Proceedings of the International Joint Conference on Neural Networks (IJCNN). 2020: 1-8.",
+  "[41] ZHANG C, LIU Q, FREDDOLINO L. EZpred: improving deep learning-based enzyme function prediction using unlabeled sequence homologs[EB/OL]. (2025)[2026-09-18]. https://doi.org/10.1101/2025.07.09.663945.",
+  "[42] RAMOLA R, JOSHI P, PIOVESAN D, READE W, ORCHARD S, MARTIN M J, et al. Advances in protein function prediction from the fifth CAFA challenge[EB/OL]. (2026)[2026-09-18]. https://doi.org/10.64898/2026.04.27.716980.",
+  "[43] KO Y S, PARKINSON J, WANG W. Scalable embedding fusion with protein language models: insights from benchmarking text-integrated representations[J]. Briefings in Bioinformatics, 2026, 27(1): bbag014.",
+  "[44] ZHOU D, BOUSQUET O, LAL T N, et al. Learning with local and global consistency[C]//Advances in Neural Information Processing Systems (NIPS 16). 2003: 321-328.",
 ];
 
 // ==============================================================================
@@ -272,7 +285,7 @@ front.push(new Paragraph({
   alignment: AlignmentType.CENTER,
   spacing: { before: 200, after: 120, line: Math.ceil(22 * 23), lineRule: "atLeast" },
   children: [new TextRun({
-    text: "基于分层双路径秩融合与最优传输的蛋白质功能预测方法",
+    text: "融合预训练语言模型的分层双路径秩融合与最优传输蛋白质功能预测",
     bold: true, size: 40, font: HEI, color: "000000",
   })],
 }));
@@ -280,7 +293,7 @@ front.push(new Paragraph({
   alignment: AlignmentType.CENTER,
   spacing: { after: 180, line: Math.ceil(15 * 23), lineRule: "atLeast" },
   children: [new TextRun({
-    text: "HDMR-Sinkhorn: A Hierarchical Dual-Path Framework with Rank Fusion and Optimal Transport Regularization for Sequence-Based Protein Function Prediction",
+    text: "HDMR-Sinkhorn: Hierarchical Dual-Path Rank Fusion with Optimal Transport and Pretrained Language Models for Protein Function Prediction",
     italics: true, size: 24, font: { ascii: "Times New Roman" }, color: "222222",
   })],
 }));
@@ -301,13 +314,13 @@ front.push(new Paragraph({
   children: [new TextRun({ text: "摘　要", bold: true, size: 28, font: HEI, color: "000000" })],
 }));
 front.push(p([
-  t("从一级氨基酸序列高精度推断蛋白质生物学功能是计算生物学与结构生物信息学的核心基石。在基因本体层级结构未知、功能标签高度匿名化且呈现极端长尾偏斜的严苛设定下，传统单纯依赖局部对齐的同源转移方法在无近缘命中（Homology-Miss）的孤儿序列子集上极易发生表征断裂；而端到端深度学习模型在近缘样本上的判别锐度又显著落后于高精度比对工具。针对异构表征尺度的量纲失配与极端长尾标签分布失衡难题，本文提出了分层双路径多尺度秩融合与双边际最优传输网络（HDMR-Sinkhorn）。该架构解耦特征抽取为双路径结构：在序列侧，由多尺度膨胀残差卷积（Dilated Residual CNN）、类别特异性残基注意力（CSRA）与旋转位置编码 Transformer（RoFormer）构成深度序列感知分支；在同源侧，结合自适应敏感度 DIAMOND 比对与多尺度 k-mer 频数流形构成进化邻域转移分支。在表征融合阶段，提出无参数互惠秩融合（Reciprocal Rank Fusion, RRF）机制消除不同模型输出在数值绝对幅度上的刻度失配；在决策推断阶段，引入样本预期激活基数与全局标签先验频率的双边际约束，利用熵正则化 Sinkhorn 最优传输算法实现全局频数对齐，并辅以逐标签自适应决策阈值推断。在包含 113,796 条序列及 500 个匿名功能标签的大规模评测基准上的严格交叉验证表明，HDMR-Sinkhorn 取得了 0.4453 的宏平均 F1 分数与 0.8609 的宏平均 ROC-AUC，并在实际双盲评测集上锁定 45.7665 的优异表现。消融实验证实，该框架在保持近缘同源命中子集优异精度的同时，将无命中孤儿蛋白子集的 F1 相对提升了 31.9%，为仅依赖单序列的高通量蛋白质自动化功能注释提供了兼具鲁棒性与理论保障的全新范式。"),
+  t("从氨基酸序列推断蛋白质功能是计算生物学的基础任务。本文面对的评测设定有三重约束：功能标签完全匿名，基因本体（GO）层级与文本描述不可得，外部注释数据库被禁用。在这一封闭设定下，同源比对迁移在无命中孤儿序列上趋于失效，深度模型的局部判别锐度低于精确比对工具，两类证据直接混合又受数值尺度失配困扰。本文提出融合预训练语言模型的分层双路径秩融合与最优传输框架 HDMR-Sinkhorn：序列侧由多尺度膨胀残差卷积、类别特异性残基注意力与旋转位置编码 Transformer 构成；同源侧结合 DIAMOND 比对（top-3 加权与二跳传递）与多尺度 k-mer 频数流形；语言模型侧将冻结的 ESM2 与 ProtBERT 嵌入拼接为 1664 维向量，经多种子残差多层感知机以线性注入并入深度分支；融合阶段以无参数互惠秩融合（RRF）对齐序数关系，决策阶段以带行基数与列频率双边际约束的熵正则化 Sinkhorn 最优传输做全局对齐，并以逐标签自适应阈值输出二值预测。在 113,796 条序列、500 个匿名标签的基准上，完整框架取得 0.4475 的宏平均 F1 与 0.8647 的宏平均 ROC-AUC，其双边际正则化版本在双盲评测平台锁定 45.7665 分。系统级分析给出两点超出单一模型改进的发现：排序头部（假阳性率 6.9% 处）的召回由同源分支主导，融合将其从 0.5472 提升至 0.6026；四组受控实验一致表明，单分支的独立增益不必然传导为融合增益，其中倾向加权使独立 F1 上升 0.0136 而融合下降 0.0014。消融还证实框架将孤儿蛋白子集的 F1 相对提升约 32%。"),
 ]));
 front.push(new Paragraph({
   spacing: { before: 120, after: 200, line: LINE },
   children: [
     new TextRun({ text: "关键词：", bold: true, size: BODY, font: HEI, color: "000000" }),
-    t("蛋白质功能预测；多标签分类；多尺度膨胀卷积；互惠秩融合；最优传输；Sinkhorn-Knopp 算法"),
+    t("蛋白质功能预测；多标签分类；预训练语言模型；互惠秩融合；最优传输；阈值校准"),
   ],
 }));
 
@@ -320,13 +333,13 @@ front.push(new Paragraph({
   alignment: AlignmentType.JUSTIFIED,
   indent: { firstLine: IND },
   spacing: { line: LINE },
-  children: [t("High-accuracy inference of protein biological functions directly from primary amino acid sequences represents a cornerstone of computational biology and structural bioinformatics. Under constrained regimes where Gene Ontology (GO) hierarchical Directed Acyclic Graphs (DAG) and text descriptions are unavailable, classical homology-based transfer suffers from acute representation degradation on homology-miss orphan sequences, whereas pure sequence-based deep networks struggle to match the sharp discriminant sensitivity of sequence alignment on close homologs. To resolve the dimensional calibration discrepancies and extreme long-tail label imbalance between heterogeneous evidence sources, we present HDMR-Sinkhorn, a Hierarchical Dual-path Multi-scale Rank-fusion network regularized by dual-marginal optimal transport. The architecture decouples feature representation into two complementary paths: a deep sequence learning path synthesizing multi-scale dilated residual 1D CNNs, Class-Specific Residual Attention (CSRA), and RoFormer with rotary position embeddings; and an evolutionary manifold path integrating adaptive DIAMOND local alignment with multi-scale k-mer profiles. In the feature aggregation stage, we propose a non-parametric Reciprocal Rank Fusion (RRF) mechanism to eliminate calibration scale discrepancies and achieve optimal ordinal alignment. In the post-processing stage, we formalize label assignment as an entropy-regularized optimal transport problem subject to instance-level predicted cardinalities and global label prior frequencies, solved efficiently via Sinkhorn-Knopp iterations. Rigorous cross-validation on a benchmark of 113,796 sequences across 500 anonymous functional labels demonstrates that HDMR-Sinkhorn achieves a Macro F1 of 0.4453 and a Macro ROC-AUC of 0.8609, establishing a leading score of 45.7665 on the blinded evaluation platform. Ablation studies confirm that while maintaining state-of-the-art precision on homology-hit sequences, HDMR-Sinkhorn achieves a 31.9% relative F1 gain on isolated homology-miss proteins, providing a principled paradigm for sequence-only protein functional annotation.")],
+  children: [t("Accurate inference of protein function from amino-acid sequences is a foundational task in computational biology. The evaluation setting considered here imposes three constraints: the 500 functional labels are fully anonymized, the Gene Ontology (GO) hierarchy and its text descriptions are unavailable, and external annotation databases are forbidden. Under this closed regime, homology-based transfer degenerates on orphan sequences without significant hits, deep models fall behind precise alignment tools on close homologs, and directly mixing the two evidence sources suffers from scale mismatch. We present HDMR-Sinkhorn, a hierarchical dual-path rank-fusion framework with optimal transport that further integrates pretrained language models. The sequence path combines multi-scale dilated residual CNNs, class-specific residual attention, and a rotary-position Transformer; the homology path couples DIAMOND alignment (top-3 bitscore weighting with two-hop transfer) with multi-scale k-mer profiles; the language-model path concatenates frozen ESM2 and ProtBERT embeddings into a 1664-d vector, feeds it through a multi-seed residual MLP, and injects the result into the deep path linearly. A non-parametric reciprocal rank fusion (RRF) aligns ordinal evidence, an entropy-regularized Sinkhorn optimal transport with row-cardinality and column-frequency marginals calibrates the decision stage, and per-label adaptive thresholds produce binary predictions. On a benchmark of 113,796 sequences with 500 anonymous labels, the full framework attains a Macro F1 of 0.4475 and a Macro ROC-AUC of 0.8647, while its dual-marginal variant holds a locked score of 45.7665 on the blinded evaluation platform. System-level analysis yields two findings beyond any single-model improvement: recall at the head of the ranking (false-positive rate 6.9%) is dominated by the homology path and lifted by fusion from 0.5472 to 0.6026; and four controlled experiments consistently show that standalone gains of a single branch do not necessarily transfer to the fused score, with propensity weighting raising standalone F1 by 0.0136 while lowering the fused score by 0.0014. Ablations further confirm a relative F1 gain of about 32% on the orphan-protein subset.")],
 }));
 front.push(new Paragraph({
   spacing: { before: 120, after: 280, line: LINE },
   children: [
     new TextRun({ text: "Keywords: ", bold: true, size: BODY, font: { ascii: "Times New Roman" } }),
-    t("Protein function prediction; Multi-label learning; Dilated residual CNN; Reciprocal rank fusion; Optimal transport; Sinkhorn-Knopp algorithm"),
+    t("Protein function prediction; Multi-label learning; Pretrained language models; Reciprocal rank fusion; Optimal transport; Threshold calibration"),
   ],
 }));
 
@@ -368,7 +381,7 @@ body.push(p([
   t("。"),
 ]));
 body.push(p([
-  t("然而，在实际生物计算或特定保密评测任务中，方法设计往往面临诸多严苛的物理与协议约束：第一，缺乏可利用的基因本体（Gene Ontology, GO）有向无环图（DAG）先验与功能术语文本描述，标签空间被完全匿名化为固定维度的离散指示向量；第二，禁止引入外部庞大的功能注释知识库作为监督源，模型必须完全在给定的封闭序列集合内完成泛化；第三，标签激活呈现出极端的长尾偏斜与稀疏性，且蛋白质个体所行使的功能数量跨度极大。这些约束使依赖外部文本编码、本体图层级归约以及蛋白质相互作用网络（PPI）的方法无法施展，迫使算法必须在\u201c仅依赖一级序列\u201d的边界内探索最本征的判别规律。"),
+  t("然而，在实际生物计算或特定保密评测任务中，方法设计往往面临诸多严苛的物理与协议约束：第一，缺乏可利用的基因本体（Gene Ontology, GO）有向无环图（DAG）先验与功能术语文本描述，标签空间被完全匿名化为固定维度的离散指示向量；第二，禁止引入外部庞大的功能注释知识库作为监督源，模型必须完全在给定的封闭序列集合内完成泛化；第三，标签频次横跨约两个数量级且个体功能数波动剧烈，属于中重度不平衡而非极稀疏长尾。这些约束使依赖外部文本编码、本体图层级归约以及蛋白质相互作用网络（PPI）的方法无法施展，迫使算法必须在\u201c仅依赖一级序列\u201d的边界内探索最本征的判别规律。"),
 ]));
 body.push(p([
   t("目前纯序列功能推断方法主要依托两大范式：其一是基于进化保守性的局部序列对齐与同源转移方法。BLAST"),
@@ -389,23 +402,27 @@ body.push(p([
   t("，基学习器之间的高度相关性又极易诱发局部校准过拟合。此外，在推断决策阶段，各蛋白质的实际激活标签数（行基数）与全库各功能的先验发生频率（列边际）存在坚实的先验约束，脱离双边际约束的独立贪心阈值搜索难以抵御宏观统计漂移。"),
 ]));
 body.push(p([
-  t("针对上述核心挑战，本文提出了分层双路径多尺度秩融合与双边际最优传输网络（HDMR-Sinkhorn）。本文的主要工作与创新点包括："),
+  t("针对上述核心挑战，本文提出了融合预训练语言模型的分层双路径秩融合与双边际最优传输网络（HDMR-Sinkhorn）。本文的主要工作与创新点包括："),
 ]));
 body.push(p([
-  tb("（1）详尽解析实验数据集的全局与长尾分布特征："),
-  t("通过对 113,796 条蛋白质全长序列进行深入探索性数据分析，定量揭示了序列长度的对数正态偏斜、每蛋白质功能标签数（基数）的离散波动，以及前 20% 头部标签占据 62.5% 标注量的极端长尾现象，为后续模型设计提供了实证支撑。"),
+  tb("（1）解析实验数据集的全局分布特征并划定方法边界："),
+  t("通过对 113,796 条蛋白质全长序列的探索性数据分析，定量刻画了序列长度的对数正态偏斜、每蛋白质功能标签数（基数）的离散波动，以及前 20% 头部标签占据 62.5% 标注量的不平衡结构；同时核实 500 个标签全部稠密（最低频标签仍有千级正例），将任务定位于中重度不平衡，排除了稀有类方法的作用空间。"),
 ]));
 body.push(p([
-  tb("（2）构建互补解耦的分层双路径特征表征架构："),
-  t("序列感知侧结合多尺度膨胀残差卷积、类别特异性残基注意力（CSRA）与 RoFormer，有效聚焦长序列上的催化核心区；同源转移侧融合高灵敏度 DIAMOND 比对与多尺度 k-mer 频数局部流形，兼顾显式局部比对与隐式模体共现。"),
+  tb("（2）构建互补解耦的三路径特征表征架构："),
+  t("序列感知侧结合多尺度膨胀残差卷积、类别特异性残基注意力（CSRA）与 RoFormer，聚焦长序列上的催化核心区；同源转移侧融合 DIAMOND 比对（top-3 加权加二跳传递）与多尺度 k-mer 频数流形；语言模型侧将冻结 ESM2 与 ProtBERT 的拼接嵌入经多种子残差多层感知机线性注入深度分支。"),
 ]));
 body.push(p([
-  tb("（3）引入无参数互惠秩融合（RRF）彻底解决量纲失配："),
-  t("在序数空间内完成深度特征与同源特征的重排加权，完全规避数值刻度不一致所导致的表征淹没问题。"),
+  tb("（3）引入无参数互惠秩融合（RRF）解决量纲失配："),
+  t("在序数空间内完成各路证据的重排加权，规避数值刻度不一致导致的表征淹没，也避免参数化堆叠的校准过拟合。"),
 ]));
 body.push(p([
   tb("（4）形式化建立双边际约束的最优传输（Sinkhorn）推断正则化："),
-  t("将多标签分配问题映射至带有行基数与列频率约束的非线性传输多胞形上，利用 Sinkhorn-Knopp 迭代算法消除频数先验偏差，显著改善长尾稀有标签的召回表现。"),
+  t("将多标签分配映射至带行基数与列频率约束的传输多胞形，利用 Sinkhorn-Knopp 迭代消除频数先验偏差，改善低频标签的召回表现。"),
+]));
+body.push(p([
+  tb("（5）给出系统级分析的两点结论："),
+  t("排序头部的召回由同源分支主导，全局 AUC 不能替代头部召回诊断；四组受控实验证实单分支独立增益不必然传导为融合增益，并以 12 条策略轴的实测关闭记录划定后续工作的边界。"),
 ]));
 
 // ------------------------------------------------------------------------------
@@ -421,7 +438,7 @@ body.push(p([
 ]));
 
 body.push(imgPara(path.join(FIG_DIR, "fig1_eda_dataset_distributions.png"), 540, 168));
-body.push(figCap("图1　数据集探索性数据分析：(a) 序列长度对数分布；(b) 单蛋白质功能标签基数分布；(c) 500 维标签极端长尾与累积占比曲线"));
+body.push(figCap("图1　数据集探索性数据分析：(a) 序列长度对数分布；(b) 单蛋白质功能标签基数分布；(c) 500 维标签频次降序与累积占比曲线"));
 
 body.push(h2("2.1　蛋白质序列长度的偏态特征"));
 body.push(p([
@@ -463,19 +480,24 @@ body.push(p([
   t(" 提供了直接的理论依据。"),
 ]));
 
-body.push(h2("2.3　功能标签空间的极端长尾垄断效应"));
+body.push(h2("2.3　功能标签频次分布：中重度不平衡而非稀疏长尾"));
 body.push(p([
-  t("图 1c 揭示了 500 个功能标签在训练集中的激活频次降序排列及其累积占比曲线（洛伦兹曲线风格）。标签分布呈现出极端剧烈的长尾倾斜（Long-tail Skewness）：出现频次最高的头部通用功能标签被激活多达 "),
+  t("图 1c 揭示了 500 个功能标签在训练集中的激活频次降序排列及其累积占比曲线（洛伦兹曲线风格）。频次最高的头部通用功能标签被激活 "),
   ti("74,546"),
-  t(" 次（占样本总量的 65.5%），而处于尾部的专一性罕见功能标签仅被激活 "),
+  t(" 次（占样本总量的 65.5%），频次最低的标签也被激活 "),
   ti("1,287"),
-  t(" 次（仅占 1.1%），极差接近 60 倍。进一步的累积分布分析表明：前 10%（50 个）高频标签垄断了全集 "),
+  t(" 次（占 1.1%），极差约 60 倍。累积分布方面：前 10%（50 个）高频标签覆盖全集 "),
   ti("47.3%"),
-  t(" 的标注总量；前 20%（100 个）标签占据了 "),
+  t(" 的标注总量，前 20%（100 个）覆盖 "),
   ti("62.5%"),
-  t(" 的标注量；而占比高达 50%（250 个）的罕见功能标签仅分得剩余 "),
+  t("，而后 50%（250 个）标签合计仅分得 "),
   ti("16.5%"),
-  t(" 的总标注份额。这种严重的分布失衡解释了为什么未加约束的模型容易陷入对高频类的盲目拟合，而引入非对称损失（ASL）与双边际最优传输正则化对于激活长尾标签具有决定性意义。"),
+  t("。"),
+]));
+body.push(p([
+  t("值得强调的是频次的下界：换算到 8:2 切分的训练侧，频次最低的标签仍保有超过 1,000 个正例样本，"),
+  tb("500 个标签全部稠密，不存在只有个位数观测的稀有类"),
+  t("。因此本任务应定位于「中重度不平衡」，而非文本挖掘中常见的极稀疏长尾：逐标签阈值与列频率先验依然关键——60 倍的频差足以让任何全局阈值失效——但面向稀有类的重采样与少样本度量学习在这里缺乏作用对象。这一数据事实也划定了后续方法设计的边界。"),
 ]));
 
 // ------------------------------------------------------------------------------
@@ -483,11 +505,11 @@ body.push(p([
 // ------------------------------------------------------------------------------
 body.push(h1("3　HDMR-Sinkhorn 架构设计与形式化推导"));
 body.push(p([
-  t("HDMR-Sinkhorn 框架的端到端推断数据流如图 2 所示。整个推断流水线由四大核心阶段严密串联：双路径特征抽取、分支内聚合、无参数互惠秩融合以及双边际最优传输正则化。"),
+  t("HDMR-Sinkhorn 框架的端到端推断数据流如图 2 所示。流水线由三路特征抽取（深度序列感知、同源迁移、预训练语言模型）、无参数互惠秩融合以及双边际最优传输正则化串联而成。"),
 ]));
 
-body.push(imgPara(path.join(FIG_DIR, "fig2_architecture_flowchart.png"), 540, 278));
-body.push(figCap("图2　HDMR-Sinkhorn 分层双路径架构与推断数据流总览"));
+body.push(imgPara(path.join(FIG_DIR, "fig2_architecture_flowchart.png"), 540, 287));
+body.push(figCap("图2　HDMR-Sinkhorn 三路径架构与推断数据流总览"));
 
 body.push(h2("3.1　分支 I：多尺度深度序列感知网络"));
 body.push(p([
@@ -568,9 +590,7 @@ body.push(p([
   tb("（1）高灵敏度局部比对得分转移："),
   t("使用 DIAMOND 工具"),
   cite(7, 8),
-  t(" 在 very-sensitive 检索模式下构建训练集索引，E-value 截断设为 0.001。对于查询样本检索到的前 "),
-  ti("M = 5"),
-  t(" 个最近邻同源蛋白，按比对得分（Bitscore）执行非线性权重聚合："),
+  t(" 在 very-sensitive 检索模式下构建训练集索引，E-value 截断设为 0.001。对每条查询保留检索前 5 个候选命中，聚合时取 bitscore 最高的前 3 个，按比对得分执行加权聚合："),
 ]));
 
 // 规范公式 (4)
@@ -589,15 +609,40 @@ body.push(p([
 // 规范公式 (5)
 body.push(mathPara("S_sim = w_align · S_bit + (1 - w_align) · S_kmer", "(5)"));
 
-body.push(h2("3.3　无参数互惠秩融合（Reciprocal Rank Fusion, RRF）"));
+body.push(h2("3.3　分支 III：预训练语言模型表征与线性注入"));
+body.push(p([
+  t("同源比对强于近缘、弱于远缘，深度序列网络正好相反。为了给孤儿序列提供第三类独立证据，本文引入两个冻结的预训练语言模型：ESM-2（150M 参数，640 维）"),
+  cite(15),
+  t(" 与 ProtBERT（1024 维）"),
+  cite(32),
+  t("，对每条序列取残基级末层输出的均值池化，拼接为 1664 维蛋白级向量。该向量送入带两层残差块的多层感知机（隐层 1024 维，GELU 激活，dropout 0.2），以非对称损失训练 35 个轮次；为压缩方差，独立训练三个随机种子并对验证概率取平均。语言模型分支的独立表现为宏 F1 0.2729、宏 AUC 0.7947，如式 (6) 所示："),
+]));
+
+body.push(mathPara("S_plm = (1/3) · ∑_(s ∈ {11, 22, 33}) σ( MLP_s( [ e_esm ; e_pt ] ) )", "(6)"));
+
+body.push(p([
+  t("注入方式上，语言模型分支以固定权重线性并入深度分支："),
+]));
+
+body.push(mathPara("S_deep' = (1 - w) · S_deep + w · S_plm          (w = 0.35)", "(7)"));
+
+body.push(p([
+  t("权重 "),
+  ti("w"),
+  t(" 在验证集上于 "),
+  ti("w ∈ {0.15, 0.20, 0.25, 0.30, 0.35}"),
+  t(" 网格中选定。需要说明的是，语言模型分支从未接触任何同源比对信息，其误差结构与比对分支天然错开；5.6 节的消融将显示，这一分支贡献了融合增量的主要部分。"),
+]));
+
+body.push(h2("3.4　无参数互惠秩融合（Reciprocal Rank Fusion, RRF）"));
 body.push(p([
   t("当深度学习预测分支与同源转移分支相交汇时，直接线性相加面临深度的数值刻度失调。比对分数的概率分布极度尖锐，在近缘同源体处迅速饱和至 1.0，在远缘处直接归零；而深度神经网络的 Sigmoid 输出相对平缓。为规避复杂参数化权重学习所引发的验证集过拟合，我们引入信息检索中的互惠秩融合（RRF）范式"),
   cite(16),
   t("："),
 ]));
 
-// 规范公式 (6)
-body.push(mathPara("RRF(S_deep, S_sim; k) = 1 / [ k + rank(S_deep) + 1 ]  +  1 / [ k + rank(S_sim) + 1 ]", "(6)"));
+// 规范公式 (8)
+body.push(mathPara("RRF(S_deep, S_sim; k) = 1 / [ k + rank(S_deep) + 1 ]  +  1 / [ k + rank(S_sim) + 1 ]", "(8)"));
 
 body.push(p([
   t("其中 "),
@@ -609,10 +654,10 @@ body.push(p([
   t("）。RRF 机制完全在序数空间运作，只强化在两路模型中位次靠前的高置信标签。随后，矩阵经列最小-最大归一化后注入主系统："),
 ]));
 
-// 规范公式 (7)
-body.push(mathPara("S_rrf = S_deep + w_sim · S_sim + β · ColNorm( RRF(S_deep, S_sim; 30) )", "(7)"));
+// 规范公式 (9)
+body.push(mathPara("S_rrf = S_deep' + w_sim · S_sim + β · ColNorm( RRF(S_deep', S_sim; 30) )", "(9)"));
 
-body.push(h2("3.4　双边际约束的最优传输（Sinkhorn-Knopp）正则化"));
+body.push(h2("3.5　双边际约束的最优传输（Sinkhorn-Knopp）正则化"));
 body.push(p([
   t("在多标签决策阶段，长尾罕见标签常因响应偏弱被全局阈值遗漏，且样本激活数量容易偏离生物学常态。设代价矩阵为 "),
   ti("C = -S_rrf"),
@@ -621,8 +666,8 @@ body.push(p([
   t("："),
 ]));
 
-// 规范公式 (8)
-body.push(mathPara("min_P  ⟨ P, -S_rrf ⟩ + τ · ∑_(i=1..N) ∑_(j=1..M) P_ij · log(P_ij)    s.t.  P · 1_M = r,  P^T · 1_N = c", "(8)"));
+// 规范公式 (10)
+body.push(mathPara("min_P  ⟨ P, -S_rrf ⟩ + τ · ∑_(i=1..N) ∑_(j=1..M) P_ij · log(P_ij)    s.t.  P · 1_M = r,  P^T · 1_N = c", "(10)"));
 
 body.push(p([
   t("其中 "),
@@ -642,8 +687,8 @@ body.push(p([
   t("。缩放因子通过极快的 Sinkhorn-Knopp 交替投影高效迭代更新："),
 ]));
 
-// 规范公式 (9)
-body.push(mathPara("u^(t+1) = r / [ K · v^(t) ],        v^(t+1) = c / [ K^T · u^(t+1) ]", "(9)"));
+// 规范公式 (11)
+body.push(mathPara("u^(t+1) = r / [ K · v^(t) ],        v^(t+1) = c / [ K^T · u^(t+1) ]", "(11)"));
 
 body.push(p([
   t("经数十次矩阵-向量乘法即可完成高精度数值收敛。求得的最优分配矩阵 "),
@@ -651,8 +696,8 @@ body.push(p([
   t(" 与原 RRF 评分进行凸组合，得到最终预测评分："),
 ]));
 
-// 规范公式 (10)
-body.push(mathPara("S_final = (1 - α_sk) · S_rrf + α_sk · P_sk          (α_sk = 0.60)", "(10)"));
+// 规范公式 (12)
+body.push(mathPara("S_final = (1 - α_sk) · S_rrf + α_sk · P_sk          (α_sk = 0.60)", "(12)"));
 
 body.push(p([
   t("最终，通过在独立验证集上应用逐标签自适应决策阈值搜索策略（SCut）"),
@@ -670,24 +715,28 @@ body.push(p([
 body.push(h1("4　实验设计与评测协议"));
 body.push(h2("4.1　数据集切分与防泄漏隔离"));
 body.push(p([
-  t("实验数据集严格按照 8:2 比例进行分层随机划分，固定随机种子 "),
+  t("实验数据集按 8:2 比例随机划分，固定随机种子 "),
   ti("seed = 42"),
   t("。全集 113,796 条样本被划分为包含 91,036 条样本的训练集与 22,760 条样本的独立验证集。训练集用于模型参数学习、DIAMOND 数据库构建以及列先验频率提取；验证集严格封闭，仅在最终评估推断与消融比较时使用，杜绝任何形式的信息泄露。"),
 ]));
 body.push(h2("4.2　评测指标定义"));
 body.push(p([
-  t("鉴于多标签长尾分类的极度稀疏性，模型评价采用宏平均 F1 分数（Macro F1）作为第一核心指标，同时辅助统计宏平均精确率（Macro P）、宏平均召回率（Macro R）以及宏平均受试者工作特征曲线下面积（Macro ROC-AUC）："),
+  t("500 个标签的训练频次横跨约两个数量级，逐标签的判别难度差异显著。模型评价以宏平均 F1 分数（Macro F1）为核心指标，同时辅助统计宏平均精确率（Macro P）、宏平均召回率（Macro R）以及宏平均受试者工作特征曲线下面积（Macro ROC-AUC）："),
 ]));
 
-// 规范公式 (11)
-body.push(mathPara("Macro F1 = (1 / M) · ∑_(j=1..M) [ 2 · P_j · R_j ] / [ P_j + R_j + ε ]", "(11)"));
+// 规范公式 (13)
+body.push(mathPara("Macro F1 = (1 / M) · ∑_(j=1..M) [ 2 · P_j · R_j ] / [ P_j + R_j + ε ]", "(13)"));
 
 body.push(p([
   t("其中 "),
   ti("P_j = TP_j / (TP_j + FP_j)"),
   t("，"),
   ti("R_j = TP_j / (TP_j + FN_j)"),
-  t("。为了全面检验模型在极端生物进化场景下的稳健性，我们将验证集严格解耦为两个互斥子集："),
+  t("。此外，为考察排序质量的前端表现，补充统计部分 AUC（pAUC，即假阳性率 "),
+  ti("∈ [0, 0.10]"),
+  t(" 区间内归一化的曲线下面积）与固定假阳性率处的召回率 "),
+  ti("R@FPR"),
+  t("，二者只依赖分数排序，与阈值选取无关。为了全面检验模型在极端生物进化场景下的稳健性，我们将验证集严格解耦为两个互斥子集："),
 ]));
 body.push(p([
   tb("（1）同源命中子集（Hit Subset, N=21,012, 92.3%）："),
@@ -711,17 +760,17 @@ body.push(tblCap("表1　HDMR-Sinkhorn 各架构组件逐级消融与子集切�
 body.push(threeLine(
   ["模型变体", "核心设计与技术路径", "Macro F1", "Macro AUC", "Hit F1", "Miss F1", "平台盲测得分"],
   [
-    ["M1: 纯同源 (Sim)", "DIAMOND 比对 (0.4) + k-mer 频数谱 (0.6)", "0.4312", "0.7785", "0.4400", "0.0577", "43.8210"],
-    ["M2: 单卷积 (CNN)", "多尺度膨胀残差一维卷积网络 (C002b)", "0.2713", "0.7806", "0.2765", "0.1024", "31.4502"],
-    ["M3: 双卷积 (DualCNN)", "C002b 膨胀卷积 × C005 CSRA 残基注意力", "0.3004", "0.8014", "0.3060", "0.1068", "33.9180"],
-    ["M4: 纯深度 (Deep)", "RoFormer (T001a/T002) + 双卷积集成", "0.2799", "0.8123", "0.2837", "0.1224", "32.1804"],
+    ["M1: 纯同源 (Sim)", "DIAMOND 比对 (0.4) + k-mer 频数谱 (0.6)", "0.4312", "0.7785", "0.4400", "0.0577", "—"],
+    ["M2: 单卷积 (CNN)", "多尺度膨胀残差一维卷积网络 (C002b)", "0.2713", "0.7806", "0.2765", "0.1024", "—"],
+    ["M3: 双卷积 (DualCNN)", "C002b 膨胀卷积 × C005 CSRA 残基注意力", "0.3004", "0.8014", "0.3060", "0.1068", "—"],
+    ["M4: 纯深度 (Deep)", "RoFormer (T001a/T002) + 双卷积集成", "0.2799", "0.8123", "0.2837", "0.1224", "—"],
     ["M5: 简单线性混合", "Deep + 0.75×Sim 简单线性加权 (TCK002a)", "0.4391", "0.8614", "0.4474", "0.0646", "45.3039"],
     ["M6: 互惠秩融合 (RRF)", "引入无参数互惠秩融合机制 (k=30, β=0.5)", "0.4437", "0.8603", "0.4525", "0.0731", "45.6634"],
     ["M7: HDMR-Sinkhorn", "完整的双边际最优传输正则化 (C011a, Ours)", "0.4443", "0.8608", "0.4532", "0.0762", "45.7665"],
   ],
   [18, 28, 12, 12, 10, 10, 10]
 ));
-body.push(tblNote("注：验证集样本总数 N=22,760；Hit 子集样本数 N=21,012；Miss 子集样本数 N=1,748。平台得分对应双盲测试集官方反馈。"));
+body.push(tblNote("注：验证集样本总数 N=22,760；Hit 子集样本数 N=21,012；Miss 子集样本数 N=1,748。平台得分对应双盲测试集官方反馈；M1–M4 未作为独立系统提交，故不填。"));
 
 body.push(imgPara(path.join(FIG_DIR, "fig3_model_evolution_ablation.png"), 540, 205));
 body.push(figCap("图3　模型迭代演化与切片性能综合对比：(a) 架构演进 Macro F1 评分；(b) Hit 与 Miss 子集性能对比"));
@@ -797,16 +846,16 @@ body.push(p([
 
 body.push(h2("5.4　功能标签长尾分层消融验证"));
 body.push(p([
-  t("针对第 2 节发现的 500 维标签极端长尾垄断效应，我们进一步将标签划分为 Head 头部（前 20%，频次 >5,400）、Medium 中频（中间 30%，频次 2,600~5,400）与 Tail 尾部长尾（后 50%，频次 <2,600）三个层级，并对比各模型的逐层宏 F1 表现，如图 6 所示。"),
+  t("针对第 2.3 节刻画的中重度不平衡结构，我们进一步将标签划分为 Head 头部（前 20%，频次 >5,400）、Medium 中频（中间 30%，频次 2,600~5,400）与 Tail 尾部（后 50%，频次 <2,600）三个层级，并对比各模型的逐层宏 F1 表现，如图 6 所示。"),
 ]));
 
 body.push(imgPara(path.join(FIG_DIR, "fig6_label_longtail_ablation.png"), 480, 240));
 body.push(figCap("图6　不同模型变体在功能标签频次分层（头部高频、中频、尾部长尾）上的宏 F1 表现对比"));
 
 body.push(p([
-  t("从图 6 可以清晰观察到：在头部高频标签上，几乎所有融合模型均能取得 0.50 以上的较高 F1；然而在占总标签数 50% 的尾部罕见功能标签上，纯同源转移 M1（0.3880）与简单线性融合 M5（0.3950）均出现明显的性能衰退。而引入双边际最优传输正则化的 HDMR-Sinkhorn 模型将长尾尾部标签的宏 F1 显著提升至 "),
+  t("从图 6 可以清晰观察到：在头部高频标签上，几乎所有融合模型均能取得 0.50 以上的较高 F1；然而在占总标签数 50% 的尾部标签上，纯同源转移 M1（0.3880）与简单线性融合 M5（0.3950）均出现明显的性能衰退。而引入双边际最优传输正则化的 HDMR-Sinkhorn 模型将尾部标签的宏 F1 显著提升至 "),
   tb("0.4060"),
-  t("（相比 M1 绝对提升 +0.0180），有力证实了列频率边际先验对消除长尾标签欠预测具有显著的理论与实践价值。"),
+  t("（相比 M1 绝对提升 +0.0180），证实了列频率边际先验对消除低频标签欠预测的价值。结合 2.3 节的数据事实需要补充一句：尾部标签在训练切分中仍保有千级正例，这里的收益来自 60 倍频差造成的阈值漂移修正，而非少样本学习。"),
 ]));
 
 body.push(h2("5.5　对比讨论：复杂参数化元学习（Stacking）的失效机理"));
@@ -816,20 +865,127 @@ body.push(p([
   t("。在严密的 5 折交叉验证 OOF 协议下，该方案的 OOF Macro F1 仅为 0.4398，相比 HDMR-Sinkhorn（0.4453）发生了严重倒退（净损失 -0.0055）。"),
 ]));
 body.push(p([
-  t("深入的误差分解表明，由于深度序列模型与同源比对模型在相同训练折叠上的预测概率高度共线性（皮尔逊相关系数达 0.75 以上），参数化回归严重过拟合了验证集上局部的置信度校准噪声，甚至将自注意力模型的权重压缩至接近 0，严重损害了全局外推能力。与之形成鲜明对比的是，无参数互惠秩融合（RRF）不引入任何标签维度的拟合参数，仅仅通过对齐相对位次便提供了强大的单调性保护，展现了高维稀疏多标签场景下非参数化融合的显著优越性。"),
+  t("深入的误差分解表明，由于深度序列模型与同源比对模型在相同训练折叠上的预测概率高度共线性（皮尔逊相关系数达 0.75 以上），参数化回归严重过拟合了验证集上局部的置信度校准噪声，甚至将自注意力模型的权重压缩至接近 0，损害了全局外推能力。与之形成对比的是，无参数互惠秩融合（RRF）不引入任何标签维度的拟合参数，仅通过对齐相对位次便提供单调性保护，这在高维多标签场景下是更稳妥的选择。"),
 ]));
+
+body.push(h2("5.6　预训练语言模型分支的消融与注入方式"));
+body.push(p([
+  t("表 2 汇总语言模型分支的逐级消融。以 M7（0.4453）为基线，加入单种子语言模型分支与二跳传递同源后，验证宏 F1 提升至 0.4471（+0.0018）；组件归因显示，全局增益几乎全部来自语言模型分支（+0.0017），而二跳传递的价值集中在孤儿子集——将零命中蛋白的 F1 从 0.0764 提升至 0.1032，相对增幅约 35%。将语言模型分支升级为三种子平均并以 "),
+  ti("w = 0.35"),
+  t(" 线性注入后，验证宏 F1 达到 0.4475、宏 AUC 0.8647，为本文最终配置。"),
+]));
+
+body.push(tblCap("表2　预训练语言模型分支的逐级消融（验证集）"));
+body.push(threeLine(
+  ["配置", "说明", "独立 F1", "融合 F1"],
+  [
+    ["M7 基线 (C011a)", "CNN 路 = C002b×C005 概率平均", "—", "0.4453"],
+    ["I060: +PLM 单种子 (w=0.25)", "引入 2-hop 传递同源", "0.2590", "0.4471"],
+    ["I064: PLM 三种子 + 线性注入 (w=0.35)", "种子平均，最终配置", "0.2729", "0.4475"],
+    ["I064: PLM 三种子 + RRF 注入", "秩融合替代线性注入", "0.2729", "0.4461"],
+    ["I081: PLM 三种子全量重训", "100% 训练数据，作用于提交侧", "0.2729*", "0.4475"],
+  ],
+  [34, 30, 12, 12]
+));
+body.push(tblNote("注：* 全量重训不改变验证口径，验证列沿用 80% 模型结果；其收益作用于无法本地验证的测试侧，与当前最优提交 I065 的差异集中在 0.23% 的判定边界格。C011a 在表 1 中记为 M7（消融管线，0.4443），二者相差 0.0010 来自 CNN 路的聚合方式：C011a 将其替换为 C002b×C005 概率平均。"));
+
+body.push(p([
+  t("两点工程结论值得记录。其一，线性注入一致优于秩融合注入（0.4475 对 0.4430–0.4461）：线性混合保留了语言模型分支的概率幅度信息，而秩融合只保留名次，抹掉了这部分可分性。其二，向特征侧加入更多同质模块（如再拼接一个同任务训练的 BiLSTM 表征）虽使独立分从 0.2590 升至 0.2867，融合分却降至 0.4462；对语言模型家族的扩容评估也表明多骨干拼接的收益非单调"),
+  cite(43),
+  t("，故本文维持 1664 维的两模型拼接不变。"),
+]));
+
+body.push(h2("5.7　排序头部诊断：低假阳性率区谁在贡献"));
+body.push(p([
+  t("宏 F1 之外，我们进一步检查排序头部——假阳性率 6.9% 处的召回率。该工作点由榜单领先者的 AUC（0.8755）与 F1（0.5286）联立反解得到，可视为强基线系统的工作区域。图 7a 给出各分支在假阳性率 10% 以内的逐标签平均 ROC 曲线，图 7b 汇总固定假阳性率处的召回。一个反直觉的事实是：同源分支的全局 AUC 最低（0.7786），头部召回却最高（0.5472），比五路深度分支高 0.0955；「AUC 高」与「头部召回高」在这里是两种能力。融合将头部召回进一步提升至 0.6026，超过任何单支，而 Sinkhorn 在这一区间零贡献。与领先者约 0.82 的头部召回相比，0.22 的差距全部落在模型判别力上，而非决策技巧——这与 5.9 节中决策层路线的关闭互为印证。"),
+]));
+
+body.push(imgPara(path.join(FIG_DIR, "fig7_head_diagnosis.png"), 540, 217));
+body.push(figCap("图7　排序头部诊断：(a) 各分支在假阳性率 ≤10% 区间的平均 ROC 曲线；(b) 假阳性率 6.9% 处的召回率对比"));
+
+body.push(h2("5.8　设计法则：独立增益不必然传导为融合增益"));
+body.push(p([
+  t("在搭建上述系统的过程中，我们反复观察到同一现象：单独训练时更强的分支，接入融合后反而拖累整体。为排除巧合，我们设计了四组受控实验，如图 8 所示。特征扩容（I063）把语言模型分支的输入从 1664 维扩到 2176 维，独立 F1 上升 0.0277，融合分下降 0.0009；倾向加权（I074）按标签频率的倒数上调稀有标签的正例权重，随权重强度增加，独立 F1 单调上升 0.0136，融合分单调下降 0.0014；单轮自训练（I087）让分支独立 F1 上升 0.0054，融合分下降 0.0003；分支分数标定（I077）则给出一个不变量——无论采用原始分、min-max 还是秩融合注入，倾向加权的融合代价恒为 0.0007，排除了尺度失配解释。"),
+]));
+
+body.push(imgPara(path.join(FIG_DIR, "fig8_design_law.png"), 340, 302));
+body.push(figCap("图8　独立增益与融合增益的关系：受控实验散点（橙虚线为倾向加权的单调扫描路径；标定不变量 I077 见正文）"));
+
+body.push(p([
+  t("这一法则与集成理论的警告一致：多数常用多样性度量与集成精度之间仅有微弱相关"),
+  cite(35),
+  t("，多样性只有在与集成误差结构不相关时才产生收益"),
+  cite(36),
+  t("。它的工程含义是，筛选候选分支的唯一可靠程序是直接度量融合后的宏 F1，独立指标只能用于诊断。"),
+]));
+
+body.push(h2("5.9　系统级算子消融与策略全景"));
+body.push(p([
+  t("图 9a 对融合算子做受试者间消融：去除 RRF 损失 0.0052，去除 Sinkhorn 损失 0.0008，二者均在贡献；来自近期竞赛复盘的「等权算术平均」经验"),
+  cite(42),
+  t(" 在本任务不成立（−0.0068），逐格 max 组合的损失更大（−0.0411）。图 9b 对同源聚合算子做同样检验：CAFA5 官方基线采用的逐标签最大序列同一性算子"),
+  cite(42),
+  t(" 在本任务损失 0.0073，近重复命中去重投票损失 0.0006——现行 bitscore 加权 top-3 聚合抵抗住了全部替代方案。"),
+]));
+
+body.push(imgPara(path.join(FIG_DIR, "fig9_operator_ablation.png"), 540, 203));
+body.push(figCap("图9　系统级算子消融：(a) 融合算子；(b) 同源聚合算子（虚线为现行配置 0.4475）"));
+
+body.push(p([
+  t("图 10 按训练频次四分位将 500 个标签分为四带，考察各分支的分带平均精确率。同源分支在全部四个频带都是最强单支——包括尾带（AP 0.331）。这否定了「按频带分工互补」的直觉：融合增益并非来自频带上的专长划分，而来自同频带内的误差结构差异。"),
+]));
+
+body.push(imgPara(path.join(FIG_DIR, "fig10_band_ap_heatmap.png"), 380, 292));
+body.push(figCap("图10　各分支在标签训练频次四分位带上的平均精确率（AP），加粗为该行最优"));
+
+body.push(p([
+  t("最后检验利用无标注测试序列的自训练路线。遵循文献护栏"),
+  cite(37, 38, 39, 40),
+  t("，采用单轮、仅正例伪标签（按流行率分位截断）、负例侧不施加监督的设计，从头重训语言模型分支。图 11 显示其独立宏 F1 从 0.2626 升至 0.2681（伪标签精度 32.9%，为平均流行率的 6.5 倍；若伪标签为真值，上限可达 0.3613），但接入融合后反而下降 0.0003。基于嵌入图的转导式标签传播"),
+  cite(44),
+  t(" 亦因近邻余弦过高（均值 0.99）而远弱于比对同源。表 3 汇总了全部 12 条已实测关闭的策略轴，作为后续工作的边界地图。"),
+]));
+
+body.push(imgPara(path.join(FIG_DIR, "fig11_selftrain.png"), 380, 290));
+body.push(figCap("图11　单轮护栏自训练各变体的独立宏 F1（虚线为伪标签完美时的真值上限）"));
+
+body.push(tblCap("表3　已实测关闭的策略轴全景（判据均为融合宏 F1）"));
+body.push(threeLine(
+  ["策略轴", "代表实验", "融合 F1 变化", "结论"],
+  [
+    ["决策层基数截断", "I070/I071", "理论上限 +0.0851，基数 MAE 15.25 不可实现", "关闭"],
+    ["特征扩容 (2176D)", "I062/I063", "−0.0009", "关闭"],
+    ["PU 倾向加权", "I074", "−0.0014（独立 +0.0136）", "关闭"],
+    ["全局排序损失", "I073", "−0.0212 / −0.0439", "关闭"],
+    ["分支分数标定", "I077", "−0.0007（各标定恒定）", "关闭"],
+    ["可学习同源聚合", "I078", "−0.0141", "关闭"],
+    ["转导图传播", "I079", "−0.1695（替换口径）", "关闭"],
+    ["低 FPR 重排头", "I080", "−0.0047", "关闭"],
+    ["单轮自训练", "I086/I087", "−0.0003（独立 +0.0054）", "关闭"],
+    ["等权平均融合", "I088", "−0.0068", "关闭"],
+    ["max 组合", "I088", "−0.0411", "关闭"],
+    ["max-pident 同源算子", "I089", "−0.0073", "关闭"],
+  ],
+  [22, 16, 40, 12]
+));
+body.push(tblNote("注：负值表示相对当时最优配置的融合宏 F1 变化；各实验均在同一 8:2 验证切分上以相同协议评测。"));
 
 // ------------------------------------------------------------------------------
 // 第 6 节 结论与未来展望
 // ------------------------------------------------------------------------------
 body.push(h1("6　结论与未来展望"));
 body.push(p([
-  t("本文针对无基因本体图先验、仅依赖氨基酸序列且标签空间极端长尾的蛋白质功能自动化注释难题，提出了创新的分层双路径秩融合与最优传输网络（HDMR-Sinkhorn）。该方法通过在输入端解耦多尺度膨胀残差卷积、类别注意力与进化比对流形，在融合端应用无参数互惠秩融合消除量纲失配，并在决策端施加双边际熵正则化最优传输，系统性化解了孤儿序列预测失效、尺度失衡与长尾漂移三大核心技术矛盾。在 113,796 条样本与 500 个匿名功能标签的大规模评测基准上，HDMR-Sinkhorn 取得了 0.4453 的验证宏 F1 与 45.7665 的双盲测试历史最高分，为复杂生物多标签分类任务树立了崭新的方法范式。"),
+  t("本文面向无基因本体先验、禁用外部注释库、标签匿名的封闭评测设定，提出了融合预训练语言模型的三路径框架 HDMR-Sinkhorn：深度序列感知、同源迁移与语言模型表征三路证据经无参数互惠秩融合对齐序数关系，再由双边际熵正则化最优传输完成全局频数校准，最终以逐标签自适应阈值输出二值预测。在 113,796 条序列与 500 个匿名标签上，完整框架取得 0.4475 的验证宏 F1 与 0.8647 的宏 AUC，其双边际正则化版本在双盲平台锁定 45.7665 分；框架同时将无命中孤儿蛋白子集的 F1 相对提升约 32%。"),
 ]));
 body.push(p([
-  t("未来研究将从以下两方面继续深化：第一，在兼顾算力开销的前提下，探索轻量级参数高效微调（LoRA）大语言模型（如 ESM-2）与局域多尺度卷积的深层残基交互；第二，引入对比学习驱动的密集远缘同源检索（如 DHR"),
-  cite(27),
-  t("），突破传统局部比对在暮光区的物理检测极限，为未知物种暗物质蛋白质的功能挖掘提供强有力的计算工具。"),
+  t("除模型本身，本文的两点系统级结论对同类封闭多标签任务具有直接参考价值：其一，排序头部（假阳性率 6.9% 处）的召回由同源分支主导，全局 AUC 的高低不能替代头部召回的独立诊断；其二，「单分支独立增益不必然传导为融合增益」在四组受控实验中一致成立，任何候选分支都必须以融合指标验收。"),
+]));
+body.push(p([
+  t("后续工作沿三条线展开：第一，将语言模型表征从末层均值池化升级为末三层拼接或可学习层加权——同构任务已报告约 2% 的独立增益"),
+  cite(41),
+  t("，对应数据管线已就绪；第二，将同源检索深度从 top-5 扩展至 top-100 并配合 bitscore 门控聚合，证据分解显示 50.8% 的同源头部漏检属于检索深度不足，这是仅剩的、有明确上限估计的增量来源；第三，在更丰富的命中证据之上重启条件化可学习聚合，并探索部分 AUC 目标"),
+  cite(33, 34),
+  t(" 在重排头上的受控应用。"),
 ]));
 
 // ------------------------------------------------------------------------------
@@ -841,7 +997,7 @@ refs.forEach((r) => body.push(refItem(r)));
 body.push(new Paragraph({
   spacing: { before: 360, line: LINE },
   children: [new TextRun({
-    text: "收稿日期：2026-09-10；修回日期：2026-09-11",
+    text: "收稿日期：2026-09-10；修回日期：2026-09-19",
     size: 20, font: SUN, color: "333333",
   })],
 }));
@@ -893,7 +1049,7 @@ const doc = new Document({
           pageNumbers: { start: 1, formatType: NumberFormat.UPPER_ROMAN },
         },
       },
-      headers: { default: buildHeader("基于分层双路径秩融合与最优传输的蛋白质功能预测方法") },
+      headers: { default: buildHeader("融合预训练语言模型的分层双路径秩融合与最优传输蛋白质功能预测") },
       footers: { default: buildPageNumberFooter() },
       children: front,
     },
@@ -906,7 +1062,7 @@ const doc = new Document({
           pageNumbers: { formatType: NumberFormat.UPPER_ROMAN },
         },
       },
-      headers: { default: buildHeader("基于分层双路径秩融合与最优传输的蛋白质功能预测方法") },
+      headers: { default: buildHeader("融合预训练语言模型的分层双路径秩融合与最优传输蛋白质功能预测") },
       footers: { default: buildPageNumberFooter() },
       children: toc,
     },
@@ -919,7 +1075,7 @@ const doc = new Document({
           pageNumbers: { start: 1, formatType: NumberFormat.DECIMAL },
         },
       },
-      headers: { default: buildHeader("基于分层双路径秩融合与最优传输的蛋白质功能预测方法") },
+      headers: { default: buildHeader("融合预训练语言模型的分层双路径秩融合与最优传输蛋白质功能预测") },
       footers: { default: buildPageNumberFooter() },
       children: body,
     },

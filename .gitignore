@@ -28,6 +28,9 @@ baseline-v2.ipynb
 tmp/
 *.log
 
+# Node.js（docx 报告生成器依赖）
+node_modules/
+
 # 论文渲染预览页（由 judge/本地渲染产生，可重建）
 doc/_paper_preview/
 doc/_survey_preview/
@@ -44,3 +47,5 @@ doc/文献/download-log.json
 doc/文献/download-log.rebuilt.json
 doc/文献/manifest.json
 doc/文献/清单.md.bak
+# Word 临时锁文件
+~$*.docx
