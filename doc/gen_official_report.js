@@ -3,6 +3,9 @@ const {
   Header, Footer, PageNumber, AlignmentType, HeadingLevel, WidthType,
   BorderStyle, ShadingType, VerticalAlign, NumberFormat, SectionType,
   TableOfContents, PageBreak, ImageRun, TabStopType, Tab,
+  Math: OMath, MathRun: MRun, MathFraction, MathSubScript, MathSuperScript,
+  MathSubSuperScript, MathSum, MathRoundBrackets, MathSquareBrackets,
+  MathCurlyBrackets, MathAngledBrackets, MathFunction,
 } = require("docx");
 const fs = require("fs");
 const path = require("path");
@@ -51,17 +54,22 @@ function cite() {
 }
 function p(children, opt) {
   const kids = [];
+  let hasMath = false;
   (children || []).forEach(function (c) {
     if (c && c.__mathti) {
-      mathRuns(c.__mathti, BODY, c.opt).forEach(function (r) { kids.push(r); });
+      mathRuns(c.__mathti, BODY, c.opt).forEach(function (r) {
+        if (r instanceof OMath) hasMath = true;
+        kids.push(r);
+      });
     } else {
+      if (c instanceof OMath) hasMath = true;
       kids.push(c);
     }
   });
   return new Paragraph(Object.assign({
     alignment: AlignmentType.JUSTIFIED,
     indent: { firstLine: IND },
-    spacing: { line: 400, lineRule: "exact", after: 0, before: 0 },
+    spacing: { line: 400, lineRule: hasMath ? "atLeast" : "exact", after: 0, before: 0 },
     children: kids,
   }, opt || {}));
 }
@@ -83,7 +91,90 @@ function msup(text) {
   return new TextRun({ font: TNR, size: 22, color: "000000", superScript: true, text });
 }
 
+function mr(t) { return new MRun(t); }
+function marr(x) { return Array.isArray(x) ? x : [x]; }
+function mfrac(n, d) { return new MathFraction({ numerator: marr(n), denominator: marr(d) }); }
+function msub(b, s) { return new MathSubScript({ children: marr(b), subScript: marr(s) }); }
+function msup(b, s) { return new MathSuperScript({ children: marr(b), superScript: marr(s) }); }
+function msubsup(b, s, p) { return new MathSubSuperScript({ children: marr(b), subScript: marr(s), superScript: marr(p) }); }
+function msum(lim, body) { return new MathSum({ children: marr(body), subScript: marr(lim) }); }
+function mrnd(b) { return new MathRoundBrackets({ children: marr(b) }); }
+function msq(b) { return new MathSquareBrackets({ children: marr(b) }); }
+function mcb(b) { return new MathCurlyBrackets({ children: marr(b) }); }
+function mang(b) { return new MathAngledBrackets({ children: marr(b) }); }
+function mfn(name, arg) { return new MathFunction({ name: marr(name), children: marr(arg) }); }
+function mlog(a) { return mfn("log", marr(a)); }
+
+/* 编号公式（键 = 公式号）。结构化 OMML，替代文本+上下标 run。 */
+const OMF = {
+  "(3.1)": [msub([mr("a")], [mr("ij")]), mr(" = "),
+    mfrac([mfn("exp", [mr("T · "), msup(msub([mr("w")], [mr("j")]), [mr("T")]), mr(" · "), msub([mr("f")], [mr("i")])])],
+          [msum([mr("k = 1..L")], [mfn("exp", [mr("T · "), msup(msub([mr("w")], [mr("j")]), [mr("T")]), mr(" · "), msub([mr("f")], [mr("k")])])])])],
+  "(3.2)": [msub([mr("L")], [mr("ASL")]), mr(" = − "), msub([mr("y")], [mr("j")]), mr(" · "),
+    msup(mrnd([mr("1 − "), msub([mr("p")], [mr("j")])]), [mr("γ+")]), mr(" · "), mlog([msub([mr("p")], [mr("j")])]),
+    mr(" − (1 − "), msub([mr("y")], [mr("j")]), mr(") · "),
+    msup(mrnd([msub([mr("p")], [mr("mj")])]), [mr("γ−")]), mr(" · "), mlog([mr("1 − "), msub([mr("p")], [mr("mj")])])],
+  "(3.3)": [msub([mr("S")], [mr("deep")]), mr(" = "), msub([mr("w")], [mr("t1")]), mr(" · "), msub([mr("P")], [mr("t001a")]),
+    mr(" + "), msub([mr("w")], [mr("t2")]), mr(" · "), msub([mr("P")], [mr("t002")]), mr(" + "), msub([mr("w")], [mr("cnn")]), mr(" · "),
+    msq([mr("(1 − "), msub([mr("α")], [mr("c")]), mr(") · "), msub([mr("P")], [mr("c002b")]), mr(" + "),
+         msub([mr("α")], [mr("c")]), mr(" · "), msub([mr("P")], [mr("c005")])])],
+  "(3.4)": [msub([mr("S")], [mr("bit")]), mr(" = "),
+    mfrac([msq([msum([mr("m = 1..M")], [msub([mr("y")], [mr("m")]), mr(" · "), msub([mr("Bitscore")], [mr("m")])])])],
+          [msq([msum([mr("m = 1..M")], [msub([mr("Bitscore")], [mr("m")])]), mr(" + ε")])])],
+  "(3.5)": [msub([mr("S")], [mr("sim")]), mr(" = "), msub([mr("w")], [mr("align")]), mr(" · "),
+    msub([mr("S")], [mr("bit")]), mr(" + (1 − "), msub([mr("w")], [mr("align")]), mr(") · "), msub([mr("S")], [mr("kmer")])],
+  "(3.6)": [msub([mr("S")], [mr("plm")]), mr(" = "), mfrac([mr("1")], [mr("3")]), mr(" · "),
+    msum([mr("s ∈ {11, 22, 33}")], [mfn("σ", [mfn([msub([mr("MLP")], [mr("s")])],
+          [msq([msub([mr("e")], [mr("esm")]), mr(" ; "), msub([mr("e")], [mr("pt")])])])])])],
+  "(3.7)": [msub([mr("S")], [mr("deep")]), mr("′ = (1 − w) · "), msub([mr("S")], [mr("deep")]), mr(" + w · "),
+    msub([mr("S")], [mr("plm")]), mr("    (w = 0.35)")],
+  "(3.8)": [mr("RRF"), mrnd([msub([mr("S")], [mr("deep")]), mr(", "), msub([mr("S")], [mr("sim")]), mr("; k")]), mr(" = "),
+    mfrac([mr("1")], [msq([mr("k + "), mfn("rank", [msub([mr("S")], [mr("deep")])]), mr(" + 1")])]), mr(" + "),
+    mfrac([mr("1")], [msq([mr("k + "), mfn("rank", [msub([mr("S")], [mr("sim")])]), mr(" + 1")])])],
+  "(3.9)": [msub([mr("S")], [mr("rrf")]), mr(" = "), msub([mr("S")], [mr("deep")]), mr("′ + "),
+    msub([mr("w")], [mr("sim")]), mr(" · "), msub([mr("S")], [mr("sim")]), mr(" + β · "),
+    mfn("ColNorm", [mrnd([mr("RRF"), mrnd([msub([mr("S")], [mr("deep")]), mr("′, "), msub([mr("S")], [mr("sim")]), mr("; 30")])])])],
+  "(3.10)": [msub([mr("min")], [mr("P")]), mr("  "), mang([mr("P, −"), msub([mr("S")], [mr("rrf")])]), mr(" + τ · "),
+    msum([mr("i = 1..N")], [msum([mr("j = 1..M")], [msub([mr("P")], [mr("ij")]), mr(" · "), mlog([msub([mr("P")], [mr("ij")])])])]),
+    mr("    s.t.  P · "), msub([mr("1")], [mr("M")]), mr(" = r, "), msup([mr("P")], [mr("T")]), mr(" · "),
+    msub([mr("1")], [mr("N")]), mr(" = c")],
+  "(3.11)": [msup([mr("u")], [mr("(t+1)")]), mr(" = "),
+    mfrac([mr("r")], [msq([mr("K · "), msup([mr("v")], [mr("(t)")])])]), mr(",    "),
+    msup([mr("v")], [mr("(t+1)")]), mr(" = "),
+    mfrac([mr("c")], [msq([msup([mr("K")], [mr("T")]), mr(" · "), msup([mr("u")], [mr("(t+1)")])])])],
+  "(3.12)": [msub([mr("S")], [mr("final")]), mr(" = (1 − "), msub([mr("α")], [mr("sk")]), mr(") · "),
+    msub([mr("S")], [mr("rrf")]), mr(" + "), msub([mr("α")], [mr("sk")]), mr(" · "), msub([mr("P")], [mr("sk")]),
+    mr("    ("), msub([mr("α")], [mr("sk")]), mr(" = 0.60)")],
+  "(5.1)": [mr("Macro F1 = "), mfrac([mr("1")], [mr("M")]), mr(" · "),
+    msum([mr("j = 1..M")], [mfrac([msq([mr("2 · "), msub([mr("P")], [mr("j")]), mr(" · "), msub([mr("R")], [mr("j")])])],
+                                 [msq([msub([mr("P")], [mr("j")]), mr(" + "), msub([mr("R")], [mr("j")]), mr(" + ε")])])])],
+};
+
+/* 行内结构公式（键 = ti() 原文）。 */
+const OMI = {
+  "L_max = 1,024": [msub([mr("L")], [mr("max")]), mr(" = 1,024")],
+  "r_i": [msub([mr("r")], [mr("i")])],
+  "x = (a_1, a_2, ..., a_L)": [mr("x = "), mrnd([msub([mr("a")], [mr("1")]), mr(", "), msub([mr("a")], [mr("2")]), mr(", …, "), msub([mr("a")], [mr("L")])])],
+  "X ∈ {0, 1}^{21 × L_max}": [mr("X ∈ "), msup(mcb([mr("0, 1")]), [mr("21 × "), msub([mr("L")], [mr("max")])])],
+  "f_i": [msub([mr("f")], [mr("i")])],
+  "w_j": [msub([mr("w")], [mr("j")])],
+  "p_mj = max(p_j - m, 0)": [msub([mr("p")], [mr("mj")]), mr(" = max("), msub([mr("p")], [mr("j")]), mr(" − m, 0)")],
+  "C = -S_rrf": [mr("C = −"), msub([mr("S")], [mr("rrf")])],
+  "r_i = max(∑_j I[ S_ij ≥ t_j ], 1)": [msub([mr("r")], [mr("i")]), mr(" = max("),
+    msum([mr("j")], [mr("I["), msub([mr("S")], [mr("ij")]), mr(" ≥ "), msub([mr("t")], [mr("j")]), mr("]")]), mr("), 1)")],
+  "K = exp(S_rrf / τ)": [mr("K = exp("), msub([mr("S")], [mr("rrf")]), mr(" / τ)")],
+  "P_sk": [msub([mr("P")], [mr("sk")])],
+  "y_ij = I[ S_(final, ij) ≥ t_j* ]": [msub([mr("y")], [mr("ij")]), mr(" = I["), msub([mr("S")], [mr("final, ij")]),
+    mr(" ≥ "), msub([mr("t")], [mr("j*")]), mr("]")],
+  "P_j = TP_j / (TP_j + FP_j)": [msub([mr("P")], [mr("j")]), mr(" = "),
+    mfrac([msub([mr("TP")], [mr("j")])], [msub([mr("TP")], [mr("j")]), mr(" + "), msub([mr("FP")], [mr("j")])])],
+  "R_j = TP_j / (TP_j + FN_j)": [msub([mr("R")], [mr("j")]), mr(" = "),
+    mfrac([msub([mr("TP")], [mr("j")])], [msub([mr("TP")], [mr("j")]), mr(" + "), msub([mr("FN")], [mr("j")])])],
+};
+
 function mathRuns(expr, fsize, extra) {
+  if (extra && extra.num && OMF[extra.num]) return [new OMath({ children: OMF[extra.num] })];
+  if (OMI[expr]) return [new OMath({ children: OMI[expr] })];
   const out = [];
   let i = 0;
   let base = "";
@@ -124,10 +215,10 @@ function mathPara(expr, numStr, fsize) {
       { type: TabStopType.CENTER, position: 4535 },
       { type: TabStopType.RIGHT, position: 9060 },
     ],
-    spacing: { before: 60, after: 60, line: 400, lineRule: "exact" },
+    spacing: { before: 60, after: 60, line: 400, lineRule: "atLeast" },
     children: [
       new TextRun({ children: [new Tab()] }),
-      ...mathRuns(expr, fsize, undefined),
+      ...mathRuns(expr, fsize, { num: numStr }),
       new TextRun({ children: [new Tab()] }),
       new TextRun({ text: numStr, font: { ascii: "Times New Roman" }, size: 21, color: "333333" }),
     ],
@@ -144,13 +235,43 @@ function h1(text) {
     children: [new TextRun({ text, bold: true, size: 32, font: HEI, color: "000000" })],
   });
 }
+function capRuns(text, font, size, color) {
+  const m = text.match(/^((?:图|表|Fig\.|Tab\.)\s*)(\d+(?:\.\d+)?)([\s\S]*)$/);
+  if (!m) return [new TextRun({ text: text, font: font, size: size, color: color })];
+  return [
+    new TextRun({ text: m[1], font: font, size: size, color: color }),
+    new TextRun({ text: m[2], font: { ascii: "Times New Roman" }, size: size, bold: true, color: color }),
+    new TextRun({ text: m[3], font: font, size: size, color: color }),
+  ];
+}
+function phBox(label, h) {
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [new TableRow({
+      height: { value: h, rule: "atLeast" },
+      children: [new TableCell({
+        verticalAlign: VerticalAlign.CENTER,
+        children: [new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { line: 240, lineRule: "auto" },
+          children: [
+            new TextRun({ text: "【占位】", font: HEI, size: 21, color: "999999" }),
+            new TextRun({ text: label, font: SUN, size: 21, color: "999999" }),
+            new TextRun({ text: "（英文原理图待生成，AI 绘图提示词见 doc/figure_prompts.md）", font: SUN, size: 18, color: "999999" }),
+          ],
+        })],
+      })],
+    })],
+  });
+}
 function enCap(text) {
+  const isTab = text.indexOf("Tab.") === 0;
   return new Paragraph({
     alignment: AlignmentType.CENTER,
-    keepNext: true,
+    keepNext: isTab ? true : undefined,
     keepLines: true,
-    spacing: { after: 200, line: 400, lineRule: "exact" },
-    children: [new TextRun({ text, size: 21, font: { ascii: "Times New Roman" }, color: "333333" })],
+    spacing: { after: 60, line: 400, lineRule: "exact" },
+    children: capRuns(text, { ascii: "Times New Roman" }, 21, "333333"),
   });
 }
 function h2(text) {
@@ -172,18 +293,18 @@ function h3(text) {
 function figCap(text) {
   return new Paragraph({
     alignment: AlignmentType.CENTER,
-    spacing: { before: 140, after: 200, line: 400, lineRule: "exact" },
+    spacing: { before: 100, after: 20, line: 400, lineRule: "exact" },
     keepLines: true,
     keepNext: true,
-    children: [new TextRun({ text, font: HEI, size: CAP, color: "000000" })],
+    children: capRuns(text, HEI, CAP, "000000"),
   });
 }
 function tblCap(text) {
   return new Paragraph({
     alignment: AlignmentType.CENTER,
-    spacing: { before: 240, after: 100, line: 400, lineRule: "exact" },
+    spacing: { before: 120, after: 20, line: 400, lineRule: "exact" },
     keepNext: true,
-    children: [new TextRun({ text, font: HEI, bold: true, size: CAP, color: "000000" })],
+    children: capRuns(text, HEI, CAP, "000000"),
   });
 }
 function tblNote(text) {
@@ -466,7 +587,7 @@ const body = [];
 body.push(h1("第1章　引言"));
 body.push(h2("1.1　分析背景与分析目标"));
 body.push(p([
-  t("随着高通量测序技术在环境微生物组与临床基因组学中的飞速发展，未表征的蛋白质一级氨基酸序列正在以超指数速度向公共数据库汇聚。然而，利用湿实验生物化学手段对未知蛋白质的分子功能、催化活性位点及细胞组分定位进行逐一实验验证，面临着周期漫长、成本高昂的客观瓶颈，导致已知序列与高质量注释之间的剪刀差持续扩大"),
+  t("随着高通量测序技术在环境微生物组与临床基因组学中的飞速发展，未表征的蛋白质一级氨基酸序列正在以超指数速度向公共数据库汇聚。然而，利用湿实验生物化学手段对未知蛋白质的分子功能、催化活性位点及细胞组分定位进行逐一实验验证，面临周期漫长、成本高昂的瓶颈，导致已知序列与高质量注释之间的剪刀差持续扩大"),
   cite(1, 2, 3),
   t("。因此，利用计算模型根据原始氨基酸残基序列自动化推断蛋白质的功能标签，已成为序列功能注释的主要途径。在由国际生物信息学计算组织举办的蛋白质功能预测关键评估（Critical Assessment of Functional Annotation, CAFA）系列评测中，基于序列的自动化注释模型已被证明能够为下游实验提供极具指导价值的科学假说"),
   cite(4, 5, 30),
@@ -480,7 +601,7 @@ body.push(p([
   cite(6),
   t(" 与 DIAMOND"),
   cite(7, 8),
-  t(" 通过局部比对检索已标注序列库，将同源邻居的标签按一致度加权聚合。该范式在近缘同源充分时表现出极高精度，但在序列一致度低于 30% 的\u201c暮光区\u201d或无命中（Homology-Miss）孤儿序列上，其有效信号趋近于零"),
+  t(" 通过局部比对检索已标注序列库，将同源邻居的标签按一致度加权聚合。该范式在近缘同源充分时精度极高，但在序列一致度低于 30% 的\u201c暮光区\u201d或无命中（Homology-Miss）孤儿序列上，其有效信号趋近于零"),
   cite(28),
   t("。其二是端到端深度学习表征模型，包括多尺度一维膨胀卷积（Dilated 1D CNN）"),
   cite(9, 10, 11),
@@ -499,7 +620,7 @@ body.push(p([
   cite(6),
   t(" 与 DIAMOND"),
   cite(7, 8),
-  t(" 为代表的局部比对工具将已标注同源体的标签按一致度加权转移，是 CAFA 系列评测公认的高硬度基线"),
+  t(" 等局部比对工具将已标注同源体的标签按一致度加权转移，是 CAFA 系列评测公认的高硬度基线"),
   cite(4, 5),
   t("。聚合方式的研究包括 bitscore 加权、近邻投票与语义加权"),
   cite(24),
@@ -509,7 +630,7 @@ body.push(p([
   cite(9),
   t(" 与 ProteInfer"),
   cite(10),
-  t(" 将卷积网络直接作用于序列，GOLabeler"),
+  t(" 用卷积网络直接处理序列，GOLabeler"),
   cite(22),
   t(" 与 NetGO"),
   cite(23),
@@ -517,13 +638,13 @@ body.push(p([
   cite(15),
   t(" 与 ProtTrans"),
   cite(32),
-  t(" 的蛋白级嵌入配合线性头即可达到强判别力，且与比对信息来源不同。融合与决策路线：非参数秩融合"),
+  t(" 的蛋白级嵌入配合线性头即达到强判别力，且与比对信息来源不同。融合与决策路线：非参数秩融合"),
   cite(16),
   t(" 规避多源分数的尺度失配，最优传输"),
   cite(17, 18),
   t(" 提供带边际约束的全局重排，逐标签阈值策略"),
   cite(19),
-  t(" 贴合宏 F1 指标；集成理论同时警告，分支多样性度量与集成精度之间仅有微弱相关"),
+  t(" 贴合宏 F1 指标；集成理论亦警告分支多样性度量与集成精度仅有微弱相关"),
   cite(35, 36),
   t("。"),
 ]));
@@ -533,23 +654,23 @@ body.push(p([
 ]));
 body.push(p([
   tb("（1）解析实验数据集的全局分布特征并划定方法边界："),
-  t("通过对 113,796 条蛋白质全长序列的探索性数据分析，定量刻画了序列长度的对数正态偏斜、每蛋白质功能标签数（基数）的离散波动，以及前 20% 头部标签占据 62.3% 标注量的不平衡结构；同时核实 500 个标签全部稠密（最低频标签仍有千级正例），将任务定位于中重度不平衡，排除了稀有类方法的作用空间。"),
+  t("对 113,796 条蛋白质全长序列做探索性数据分析，定量刻画了序列长度的对数正态偏斜、基数离散波动，以及前 20% 头部标签占 62.3% 标注量的不平衡结构；同时核实 500 个标签全部稠密（最低频标签仍有千级正例），将任务定位于中重度不平衡，排除了稀有类方法的作用空间。"),
 ]));
 body.push(p([
   tb("（2）构建互补解耦的三路径特征表征架构："),
-  t("序列感知侧结合多尺度膨胀残差卷积、类别特异性残基注意力（CSRA）与 RoFormer，聚焦长序列上的催化核心区；同源转移侧融合 DIAMOND 比对（top-3 加权加二跳传递）与多尺度 k-mer 频数流形；语言模型侧将冻结 ESM2 与 ProtBERT 的拼接嵌入经多种子残差多层感知机线性注入深度分支。"),
+  t("序列感知侧结合多尺度膨胀残差卷积、类别特异性残基注意力（CSRA）与 RoFormer，；同源转移侧融合 DIAMOND 比对（top-3 加权加二跳传递）与多尺度 k-mer 频数流形；语言模型侧将冻结 ESM2 与 ProtBERT 的拼接嵌入经多种子残差多层感知机线性注入深度分支。"),
 ]));
 body.push(p([
   tb("（3）引入无参数互惠秩融合（RRF）解决量纲失配："),
-  t("在序数空间内完成各路证据的重排加权，规避数值刻度不一致导致的表征淹没，也避免参数化堆叠的校准过拟合。"),
+  t("在序数空间内完成各路证据的重排加权，规避数值刻度不一致导致的表征淹没与参数化堆叠的校准过拟合。"),
 ]));
 body.push(p([
   tb("（4）形式化建立双边际约束的最优传输（Sinkhorn）推断正则化："),
-  t("将多标签分配映射至带行基数与列频率约束的传输多胞形，利用 Sinkhorn-Knopp 迭代消除频数先验偏差，改善低频标签的召回表现。"),
+  t("将多标签分配映射至带行基数与列频率约束的传输多胞形，用 Sinkhorn-Knopp 迭代消除频数先验偏差，改善低频标签召回。"),
 ]));
 body.push(p([
-  tb("（5）给出系统级分析的两点结论："),
-  t("排序头部的召回由同源分支主导，全局 AUC 不能替代头部召回诊断；四组受控实验证实单分支独立增益不必然传导为融合增益，并以 12 条策略轴的实测关闭记录划定后续工作的边界。"),
+  tb("（5）系统级分析给出两点结论："),
+  t("排序头部的召回由同源分支主导，全局 AUC 不能替代头部召回诊断；四组受控实验证实单分支的独立增益不必然传导为融合增益，12 条候选策略轴的实测关闭划定了后续工作的边界。"),
 ]));
 
 // ------------------------------------------------------------------------------
@@ -575,26 +696,26 @@ body.push(enCap("Fig. 2.1  Exploratory data analysis: (a) sequence length; (b) l
 body.push(h2("2.2　探索性分析总览"));
 body.push(h2("2.3　蛋白质序列长度的偏态特征"));
 body.push(p([
-  t("图 2.1 从三个维度给出数据全景。以下三节分别解读长度、基数与标签频次的结构特征，并从中提炼对建模与决策层的直接约束。"),
+  t("图 2.1 从三个维度给出数据全景。以下三节分别解读长度、基数与标签频次的结构特征。"),
 ]));
 body.push(p([
-  t("图 2.1a 展示了氨基酸残基长度的概率密度直方图（对数横轴）。统计结果表明，全集序列长度的均值为 "),
+  t("图 2.1a 展示了氨基酸残基长度的概率密度直方图（对数横轴）。统计结果表明，序列长度均值为 "),
   ti("553.2 aa"),
   t("，中位数为 "),
   ti("410.0 aa"),
   t("，标准差为 "),
   ti("643.5 aa"),
-  t("。长度分布呈现出极强的正偏态（右偏长尾），其 25% 分位数、75% 分位数与 95% 分位数分别为 "),
+  t("。长度分布呈强正偏态（右偏长尾），其 25% 分位数、75% 分位数与 95% 分位数分别为 "),
   ti("247 aa"),
   t("、"),
   ti("652 aa"),
   t(" 与 "),
   ti("1,434 aa"),
-  t("，最长异常序列达到 "),
+  t("，最长序列达 "),
   ti("35,375 aa"),
-  t("。这一统计事实表明，绝大多数（超 95%）功能性蛋白质的分子链处于 1,500 aa 以内。这为深度一维卷积网络采用局部最大截断（如 "),
+  t("。这表明绝大多数（超 95%）蛋白质的分子链处于 1,500 aa 以内。这为深度一维卷积网络采用局部最大截断（如 "),
   ti("L_max = 1,024"),
-  t("）提供了高覆盖率保障，同时也指明：单纯依靠全局平均池化处理残基表征，势必会导致处于千级长链中的关键功能模体遭到严重稀释。"),
+  t("）提供了高覆盖率保障，也提示：仅用全局平均池化会把千级长链中的关键功能模体稀释。"),
 ]));
 
 body.push(h2("2.4　单蛋白质功能标签激活基数分布"));
@@ -611,9 +732,9 @@ body.push(p([
   ti("57"),
   t(" 与 "),
   ti("117"),
-  t("。这种剧烈的跨样本基数波动直接证伪了\u201c对所有样本实施固定 Top-k 截断\u201d的粗暴后处理策略，也为本文在后处理阶段基于模型初步推断动态构建样本行边际先验向量 "),
+  t("。这种剧烈的基数波动直接证伪了\u201c对所有样本实施固定 Top-k 截断\u201d的粗暴策略，也为本文在后处理阶段按模型推断动态构建行边际先验 "),
   ti("r_i"),
-  t(" 提供了直接的理论依据。"),
+  t(" 提供了直接依据。"),
 ]));
 
 body.push(h2("2.5　功能标签频次分布：中重度不平衡而非稀疏长尾"));
@@ -631,9 +752,9 @@ body.push(p([
   t("。"),
 ]));
 body.push(p([
-  t("值得强调的是频次的下界：换算到 8:2 切分的训练侧，频次最低的标签仍保有超过 1,000 个正例样本，"),
-  tb("500 个标签全部稠密，不存在只有个位数观测的稀有类"),
-  t("。因此本任务应定位于「中重度不平衡」，而非文本挖掘中常见的极稀疏长尾：逐标签阈值与列频率先验依然关键：60 倍的频差足以让任何全局阈值失效；但面向稀有类的重采样与少样本度量学习在这里缺乏作用对象。这一数据事实也划定了后续方法设计的边界。"),
+  t("值得注意的是频次下界：换算到 8:2 切分的训练侧，最低频标签仍保有超过 1,000 个正例样本，"),
+  tb("500 个标签全部稠密，不存在个位数观测的稀有类"),
+  t("。因此任务应定位于「中重度不平衡」而非极稀疏长尾：逐标签阈值与列频率先验依然关键，60 倍频差足以让任何全局阈值失效；但稀有类重采样与度量学习在此缺乏作用对象。"),
 ]));
 
 // ------------------------------------------------------------------------------
@@ -644,7 +765,7 @@ body.push(p([
   t("HDMR-Sinkhorn 框架的端到端推断数据流如图 3.1 所示。流水线由三路特征抽取（深度序列感知、同源迁移、预训练语言模型）、无参数互惠秩融合以及双边际最优传输正则化串联而成。"),
 ]));
 
-body.push(imgPara(path.join(FIG_DIR, "fig2_architecture_flowchart.png"), 540, 287));
+body.push(phBox("图 3.1　HDMR-Sinkhorn 三路径架构与推断数据流总览", 4300));
 body.push(figCap("图3.1　HDMR-Sinkhorn 三路径架构与推断数据流总览"));
 body.push(enCap("Fig. 3.1  Three-path architecture and inference pipeline of HDMR-Sinkhorn"));
 
