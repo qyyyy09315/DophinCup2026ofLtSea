@@ -190,9 +190,9 @@ ax.axvline(0, color=GRAY, lw=0.8)
 ax.text(0.0125, 0.00045, "standalone up,\nfused down", fontsize=7.5, color=VERM,
         ha="center", style="italic")
 pts = {
-    "I063 feature expansion": ("I063_2176D特征扩容", SKY, "o"),
-    "I074 propensity sweep": ("I074_a0.5", ORANGE, "s"),
-    "I087 self-training": ("I087_自训练", GREEN, "^"),
+    "Feature expansion (2176D)": ("I063_2176D特征扩容", SKY, "o"),
+    "Propensity weighting": ("I074_a0.5", ORANGE, "s"),
+    "Self-training": ("I087_自训练", GREEN, "^"),
 }
 for name, (key, c, mk) in pts.items():
     d = law[key]
@@ -257,8 +257,8 @@ save(fig, "fig9_operator_ablation")
 print("Figure 10: frequency-band AP heatmap...")
 i075 = json.load(io.open(os.path.join(ROOT, "rel", "I075_report.json"), encoding="utf-8"))
 band = i075["section2_band_ap"]
-rows = [("cnn(C002b)", "CNN (C002b)"), ("c005(CSRA)", "CSRA (C005)"),
-        ("t001a", "RoFormer (T001a)"), ("plm_asl", "PLM-MLP"),
+rows = [("cnn(C002b)", "CNN (Dilated Residual)"), ("c005(CSRA)", "CSRA Attention"),
+        ("t001a", "RoFormer (RoPE)"), ("plm_asl", "PLM-MLP"),
         ("deep4", "Deep-4 ensemble"), ("sim", "Homology (Sim)")]
 cols = ["极稀有 <Q1", "稀有 Q1-Q2", "中等 Q2-Q3", "高频 >Q3"]
 col_en = ["Tail <Q1", "Q1-Q2", "Q2-Q3", "Head >Q3"]

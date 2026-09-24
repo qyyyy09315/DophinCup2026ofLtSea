@@ -6,7 +6,7 @@
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-09-19T14:44:39.881295</dc:date>
+    <dc:date>2026-09-24T10:39:47.488918</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -75,7 +75,7 @@ L 273.78 326.1075
 L 135.887713 327.584721 
 L 192.33931 200.952768 
 z
-" clip-path="url(#p62ca42986e)" style="fill: #6b8eae; opacity: 0.12"/>
+" clip-path="url(#p3c08ced150)" style="fill: #6b8eae; opacity: 0.12"/>
    </g>
    <g id="patch_4">
     <path d="M 273.78 136.539608 
@@ -85,7 +85,7 @@ L 273.78 359.704043
 L 184.852629 299.314814 
 L 101.40203 148.450105 
 z
-" clip-path="url(#p62ca42986e)" style="fill: #009e73; opacity: 0.12"/>
+" clip-path="url(#p3c08ced150)" style="fill: #009e73; opacity: 0.12"/>
    </g>
    <g id="patch_5">
     <path d="M 273.78 71.085471 
@@ -95,14 +95,14 @@ L 273.78 408.054184
 L 131.754976 329.970758 
 L 166.324428 185.933069 
 z
-" clip-path="url(#p62ca42986e)" style="fill: #0072b2; opacity: 0.22"/>
+" clip-path="url(#p3c08ced150)" style="fill: #0072b2; opacity: 0.22"/>
    </g>
    <g id="matplotlib.axis_1">
     <g id="xtick_1">
      <g id="line2d_1">
       <path d="M 273.78 247.972572 
 L 273.78 29.023145 
-" clip-path="url(#p62ca42986e)" style="fill: none; stroke: #b0b0b0; stroke-width: 0.8; stroke-linecap: square"/>
+" clip-path="url(#p3c08ced150)" style="fill: none; stroke: #b0b0b0; stroke-width: 0.8; stroke-linecap: square"/>
      </g>
      <g id="text_1">
       <!-- Overall Macro F1 -->
@@ -339,7 +339,7 @@ z
      <g id="line2d_2">
       <path d="M 273.78 247.972572 
 L 463.395767 138.497858 
-" clip-path="url(#p62ca42986e)" style="fill: none; stroke: #b0b0b0; stroke-width: 0.8; stroke-linecap: square"/>
+" clip-path="url(#p3c08ced150)" style="fill: none; stroke: #b0b0b0; stroke-width: 0.8; stroke-linecap: square"/>
      </g>
      <g id="text_2">
       <!-- Macro Precision -->
@@ -458,7 +458,7 @@ z
      <g id="line2d_3">
       <path d="M 273.78 247.972572 
 L 463.395767 357.447286 
-" clip-path="url(#p62ca42986e)" style="fill: none; stroke: #b0b0b0; stroke-width: 0.8; stroke-linecap: square"/>
+" clip-path="url(#p3c08ced150)" style="fill: none; stroke: #b0b0b0; stroke-width: 0.8; stroke-linecap: square"/>
      </g>
      <g id="text_3">
       <!-- Macro Recall -->
@@ -516,7 +516,7 @@ z
      <g id="line2d_4">
       <path d="M 273.78 247.972572 
 L 273.78 466.922 
-" clip-path="url(#p62ca42986e)" style="fill: none; stroke: #b0b0b0; stroke-width: 0.8; stroke-linecap: square"/>
+" clip-path="url(#p3c08ced150)" style="fill: none; stroke: #b0b0b0; stroke-width: 0.8; stroke-linecap: square"/>
      </g>
      <g id="text_4">
       <!-- Macro ROC-AUC -->
@@ -610,7 +610,7 @@ z
      <g id="line2d_5">
       <path d="M 273.78 247.972572 
 L 84.164233 357.447286 
-" clip-path="url(#p62ca42986e)" style="fill: none; stroke: #b0b0b0; stroke-width: 0.8; stroke-linecap: square"/>
+" clip-path="url(#p3c08ced150)" style="fill: none; stroke: #b0b0b0; stroke-width: 0.8; stroke-linecap: square"/>
      </g>
      <g id="text_5">
       <!-- Hit Subset F1 -->
@@ -756,7 +756,7 @@ z
      <g id="line2d_6">
       <path d="M 273.78 247.972572 
 L 84.164233 138.497858 
-" clip-path="url(#p62ca42986e)" style="fill: none; stroke: #b0b0b0; stroke-width: 0.8; stroke-linecap: square"/>
+" clip-path="url(#p3c08ced150)" style="fill: none; stroke: #b0b0b0; stroke-width: 0.8; stroke-linecap: square"/>
      </g>
      <g id="text_6">
       <!-- Miss Subset F1 (×4) -->
@@ -869,7 +869,7 @@ C 233.971013 242.744904 235.00075 237.568068 237.001292 232.738333
 C 239.001834 227.908597 241.934276 223.519887 245.630795 219.823368 
 C 249.327315 216.126848 253.716025 213.194406 258.54576 211.193864 
 C 263.375496 209.193322 268.552332 208.163585 273.78 208.163585 
-" clip-path="url(#p62ca42986e)" style="fill: none; stroke: #b0b0b0; stroke-width: 0.8; stroke-linecap: square"/>
+" clip-path="url(#p3c08ced150)" style="fill: none; stroke: #b0b0b0; stroke-width: 0.8; stroke-linecap: square"/>
      </g>
      <g id="text_7">
       <!-- 20% -->
@@ -998,7 +998,7 @@ C 194.162026 237.517236 196.2215 227.163564 200.222584 217.504093
 C 204.223668 207.844621 210.088552 199.067202 217.481591 191.674163 
 C 224.87463 184.281124 233.652049 178.41624 243.311521 174.415156 
 C 252.970992 170.414072 263.324663 168.354599 273.78 168.354599 
-" clip-path="url(#p62ca42986e)" style="fill: none; stroke: #b0b0b0; stroke-width: 0.8; stroke-linecap: square"/>
+" clip-path="url(#p3c08ced150)" style="fill: none; stroke: #b0b0b0; stroke-width: 0.8; stroke-linecap: square"/>
      </g>
      <g id="text_8">
       <!-- 40% -->
@@ -1049,7 +1049,7 @@ C 154.353039 232.289567 157.442249 216.75906 163.443875 202.269853
 C 169.445502 187.780646 178.242827 174.614518 189.332386 163.524959 
 C 200.421945 152.4354 213.588074 143.638074 228.077281 137.636448 
 C 242.566488 131.634822 258.096995 128.545612 273.78 128.545612 
-" clip-path="url(#p62ca42986e)" style="fill: none; stroke: #b0b0b0; stroke-width: 0.8; stroke-linecap: square"/>
+" clip-path="url(#p3c08ced150)" style="fill: none; stroke: #b0b0b0; stroke-width: 0.8; stroke-linecap: square"/>
      </g>
      <g id="text_9">
       <!-- 60% -->
@@ -1114,7 +1114,7 @@ C 114.544053 227.061899 118.662999 206.354556 126.665167 187.035613
 C 134.667335 167.716671 146.397103 150.161833 161.183182 135.375754 
 C 175.96926 120.589675 193.524098 108.859908 212.843041 100.85774 
 C 232.161984 92.855571 252.869327 88.736625 273.78 88.736625 
-" clip-path="url(#p62ca42986e)" style="fill: none; stroke: #b0b0b0; stroke-width: 0.8; stroke-linecap: square"/>
+" clip-path="url(#p3c08ced150)" style="fill: none; stroke: #b0b0b0; stroke-width: 0.8; stroke-linecap: square"/>
      </g>
      <g id="text_10">
       <!-- 80% -->
@@ -1186,7 +1186,7 @@ C 74.735066 221.834231 79.883749 195.950052 89.886459 171.801374
 C 99.889169 147.652695 114.551379 125.709148 133.033977 107.226549 
 C 151.516576 88.743951 173.460123 74.081742 197.608801 64.079031 
 C 221.75748 54.076321 247.641659 48.927638 273.78 48.927638 
-" clip-path="url(#p62ca42986e)" style="fill: none; stroke: #b0b0b0; stroke-width: 0.8; stroke-linecap: square"/>
+" clip-path="url(#p3c08ced150)" style="fill: none; stroke: #b0b0b0; stroke-width: 0.8; stroke-linecap: square"/>
      </g>
      <g id="text_11">
       <!-- 100% -->
@@ -1221,7 +1221,7 @@ L 273.78 326.1075
 L 135.887713 327.584721 
 L 192.33931 200.952768 
 L 273.78 76.331172 
-" clip-path="url(#p62ca42986e)" style="fill: none; stroke: #6b8eae; stroke-width: 1.5; stroke-linecap: square"/>
+" clip-path="url(#p3c08ced150)" style="fill: none; stroke: #6b8eae; stroke-width: 1.5; stroke-linecap: square"/>
    </g>
    <g id="line2d_13">
     <path d="M 273.78 136.539608 
@@ -1231,7 +1231,7 @@ L 273.78 359.704043
 L 184.852629 299.314814 
 L 101.40203 148.450105 
 L 273.78 136.539608 
-" clip-path="url(#p62ca42986e)" style="fill: none; stroke: #009e73; stroke-width: 1.5; stroke-linecap: square"/>
+" clip-path="url(#p3c08ced150)" style="fill: none; stroke: #009e73; stroke-width: 1.5; stroke-linecap: square"/>
    </g>
    <g id="line2d_14">
     <path d="M 273.78 71.336055 
@@ -1241,7 +1241,7 @@ L 273.78 407.461595
 L 131.957719 329.853704 
 L 170.668189 188.44094 
 L 273.78 71.336055 
-" clip-path="url(#p62ca42986e)" style="fill: none; stroke-dasharray: 6.66,2.88; stroke-dashoffset: 0; stroke: #e69f00; stroke-width: 1.8"/>
+" clip-path="url(#p3c08ced150)" style="fill: none; stroke-dasharray: 6.66,2.88; stroke-dashoffset: 0; stroke: #e69f00; stroke-width: 1.8"/>
    </g>
    <g id="line2d_15">
     <path d="M 273.78 71.085471 
@@ -1251,7 +1251,7 @@ L 273.78 408.054184
 L 131.754976 329.970758 
 L 166.324428 185.933069 
 L 273.78 71.085471 
-" clip-path="url(#p62ca42986e)" style="fill: none; stroke: #0072b2; stroke-width: 2.4; stroke-linecap: square"/>
+" clip-path="url(#p3c08ced150)" style="fill: none; stroke: #0072b2; stroke-width: 2.4; stroke-linecap: square"/>
    </g>
    <g id="patch_6">
     <path d="M 273.78 29.023145 
@@ -1751,7 +1751,7 @@ L 299.764766 512.339801
 " style="fill: none; stroke-dasharray: 6.66,2.88; stroke-dashoffset: 0; stroke: #e69f00; stroke-width: 1.8"/>
     </g>
     <g id="text_14">
-     <!-- M6: Rank Fusion (I011) -->
+     <!-- M6: Rank Fusion (RRF) -->
      <g transform="translate(306.564766 515.314801) scale(0.085 -0.085)">
       <defs>
        <path id="ArialMT-35" d="M 503 0 
@@ -1913,13 +1913,6 @@ Q 969 -75 630 194
 Q 291 463 197 991 
 z
 " transform="scale(0.015625)"/>
-       <path id="ArialMT-2c" d="M 597 0 
-L 597 4581 
-L 1203 4581 
-L 1203 0 
-L 597 0 
-z
-" transform="scale(0.015625)"/>
       </defs>
       <use xlink:href="#ArialMT-30"/>
       <use xlink:href="#ArialMT-19" transform="translate(83.296875 0)"/>
@@ -1938,11 +1931,10 @@ z
       <use xlink:href="#ArialMT-51" transform="translate(700.203125 0)"/>
       <use xlink:href="#ArialMT-3" transform="translate(755.8125 0)"/>
       <use xlink:href="#ArialMT-b" transform="translate(783.59375 0)"/>
-      <use xlink:href="#ArialMT-2c" transform="translate(816.890625 0)"/>
-      <use xlink:href="#ArialMT-13" transform="translate(844.671875 0)"/>
-      <use xlink:href="#ArialMT-14" transform="translate(900.28125 0)"/>
-      <use xlink:href="#ArialMT-14" transform="translate(948.46875 0)"/>
-      <use xlink:href="#ArialMT-c" transform="translate(1004.078125 0)"/>
+      <use xlink:href="#ArialMT-35" transform="translate(816.890625 0)"/>
+      <use xlink:href="#ArialMT-35" transform="translate(889.109375 0)"/>
+      <use xlink:href="#ArialMT-29" transform="translate(961.328125 0)"/>
+      <use xlink:href="#ArialMT-c" transform="translate(1022.40625 0)"/>
      </g>
     </g>
     <g id="line2d_19">
@@ -2052,7 +2044,7 @@ z
   </g>
  </g>
  <defs>
-  <clipPath id="p62ca42986e">
+  <clipPath id="p3c08ced150">
    <path d="M 492.729428 247.972572 
 C 492.729428 219.220397 487.065876 190.7478 476.062895 164.184254 
 C 465.059914 137.620707 448.931483 113.482805 428.600625 93.151947 

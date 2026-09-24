@@ -228,7 +228,7 @@ print("  Successfully saved Figure 2 (SVG & PNG)")
 print("Plotting Figure 3: Model Evolution & Ablation...")
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13.2, 5.0), dpi=300)
 
-var_names = ["M1: Sim\n(Homology)", "M2: CNN\n(C002b)", "M3: DualCNN\n(C002b×C005)", "M4: Deep\n(RoFormer+CNN)", "M5: Linear\n(TCK002a)", "M6: RRF\n(I011)", "M7: HDMR-Sinkhorn\n(C011a, Ours)"]
+var_names = ["M1: Sim\n(Homology)", "M2: CNN\n(Dilated Residual)", "M3: DualCNN\n(CNN×CSRA)", "M4: Deep\n(RoFormer+CNN)", "M5: Linear\n(Deep+Sim)", "M6: RRF\n(Rank Fusion)", "M7: HDMR-Sinkhorn\n(Ours)"]
 f1_scores = [results[k]["macro_f1"] for k in ["M1_Sim", "M2_CNN", "M3_DualCNN", "M4_Deep", "M5_LinearBlend", "M6_RRF", "M7_HDMR_Sinkhorn"]]
 hit_scores = [results[k]["hit_f1"] for k in ["M1_Sim", "M2_CNN", "M3_DualCNN", "M4_Deep", "M5_LinearBlend", "M6_RRF", "M7_HDMR_Sinkhorn"]]
 miss_scores = [results[k]["miss_f1"] for k in ["M1_Sim", "M2_CNN", "M3_DualCNN", "M4_Deep", "M5_LinearBlend", "M6_RRF", "M7_HDMR_Sinkhorn"]]
@@ -316,7 +316,7 @@ ax.fill(angles, v_m4, TEAL, alpha=0.12)
 
 # M6 (RRF)
 v_m6 = get_radar_coords(results["M6_RRF"]) + [get_radar_coords(results["M6_RRF"])[0]]
-ax.plot(angles, v_m6, linewidth=1.8, linestyle='dashed', label="M6: Rank Fusion (I011)", color=GOLD)
+ax.plot(angles, v_m6, linewidth=1.8, linestyle='dashed', label="M6: Rank Fusion (RRF)", color=GOLD)
 
 # M7 (HDMR-Sinkhorn)
 v_m7 = get_radar_coords(results["M7_HDMR_Sinkhorn"]) + [get_radar_coords(results["M7_HDMR_Sinkhorn"])[0]]
@@ -410,8 +410,8 @@ width = 0.16
 
 ax.bar(x - 2*width, m1_strata, width, label="M1: Homology Transfer (Sim)", color=MUTED_B, edgecolor=DARK_1, lw=0.7)
 ax.bar(x - width,   m4_strata, width, label="M4: Pure Deep Network", color=TEAL, edgecolor=DARK_1, lw=0.7)
-ax.bar(x,           m5_strata, width, label="M5: Linear Blend (TCK002a)", color=GOLD, edgecolor=DARK_1, lw=0.7)
-ax.bar(x + width,   m6_strata, width, label="M6: Rank Fusion (I011)", color=CORAL, edgecolor=DARK_1, lw=0.7)
+ax.bar(x,           m5_strata, width, label="M5: Linear Blend (Deep+Sim)", color=GOLD, edgecolor=DARK_1, lw=0.7)
+ax.bar(x + width,   m6_strata, width, label="M6: Rank Fusion (RRF)", color=CORAL, edgecolor=DARK_1, lw=0.7)
 ax.bar(x + 2*width, m7_strata, width, label="M7: HDMR-Sinkhorn (Ours)", color=NAVY, edgecolor=DARK_1, lw=0.7)
 
 ax.set_ylabel("Stratified Macro F1 Score", fontsize=10, fontweight="bold", color=DARK_1)
