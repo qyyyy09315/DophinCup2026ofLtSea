@@ -49,3 +49,9 @@ doc/文献/manifest.json
 doc/文献/清单.md.bak
 # Word 临时锁文件
 ~$*.docx
+
+# 本机工具产物（不入库）
+.mimosa/
+.workbuddy/
+# 图3.1 的 AI 生成废弃稿（已被 fig2_architecture_redrawn.png 取代，仅本地留档）
+doc/figures/fig31_generated.png
