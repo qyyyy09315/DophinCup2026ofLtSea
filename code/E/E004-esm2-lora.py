@@ -43,6 +43,7 @@ from tqdm import tqdm
 
 from peft import LoraConfig, PeftModel, TaskType, get_peft_model
 from transformers import EsmForSequenceClassification
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 REL_DIR = os.path.join(PROJECT_ROOT, "rel")
@@ -344,7 +345,7 @@ def main():
                 if (step + 1) % 1000 == 0:
                     torch.cuda.empty_cache()
                     save_adapter(model, last_ckpt)
-                    with open(meta_path, "w", encoding="utf-8") as f:
+                    with Path(meta_path).open("w", encoding="utf-8") as f:
                         json.dump({"best_f1": best_f1, "best_epoch": ep,
                                    "last_epoch": ep, "last_step": step + 1}, f)
                     print(f"    ckpt step {step + 1}", flush=True)
@@ -362,7 +363,7 @@ def main():
                     best_f1 = f1
                     bad = 0
                     save_adapter(model, f"{MODEL_DIR}/best")
-                    with open(meta_path, "w", encoding="utf-8") as f:
+                    with Path(meta_path).open("w", encoding="utf-8") as f:
                         json.dump({"best_f1": best_f1, "best_epoch": ep + 1}, f)
                     print(f"    保存 best F1={best_f1:.4f}", flush=True)
                 else:
@@ -431,7 +432,7 @@ def main():
         "epochs": n_epochs, "bs": bs, "lr": lr, "ckpt": use_ckpt,
         "submission": sub_path, "seconds": round(time.time() - t0),
     }
-    with open(f"{REL_DIR}/E004_report.json", "w", encoding="utf-8") as f:
+    with Path(f"{REL_DIR}/E004_report.json").open("w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print(f"  报告: {REL_DIR}/E004_report.json")
     print(f"  提交: {sub_path}")

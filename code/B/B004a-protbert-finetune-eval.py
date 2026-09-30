@@ -22,6 +22,7 @@ import torch
 from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import (roc_auc_score, accuracy_score)
+from pathlib import Path
 
 spec = importlib.util.spec_from_file_location("protbert_finetune", "B004a-protbert-finetune.py")
 pbf = importlib.util.module_from_spec(spec)
@@ -75,7 +76,7 @@ def main():
     print("[4/6] 加载 checkpoint...")
     if not os.path.exists(pbf.MODEL_PATH):
         raise FileNotFoundError(f"未找到 {pbf.MODEL_PATH}，请等待训练完成第一个 epoch 验证后再运行")
-    ckpt = torch.load(pbf.MODEL_PATH, map_location=pbf.DEVICE, weights_only=False)
+    ckpt = torch.load(pbf.MODEL_PATH, map_location=pbf.DEVICE, weights_only=True)
     state = ckpt["state_dict"] if isinstance(ckpt, dict) and "state_dict" in ckpt else ckpt
     model.load_state_dict(state)
     print(f"  已加载: {pbf.MODEL_PATH}")
@@ -142,7 +143,7 @@ def main():
         "val_total_positive_pred": total_pos_pred,
         "val_pred_positive_ratio": round(y_val_pred.mean(), 6),
     }
-    with open(pbf.METRICS_PATH, "w", encoding="utf-8") as f:
+    with Path(pbf.METRICS_PATH).open("w", encoding="utf-8") as f:
         json.dump(metrics, f, ensure_ascii=False, indent=2)
     print(f"  指标: {pbf.METRICS_PATH}")
     print("=" * 60)

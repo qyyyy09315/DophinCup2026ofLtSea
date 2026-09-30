@@ -28,6 +28,7 @@ W_PLM = 0.35
 FPR_GRID = [0.02, 0.05, 0.069, 0.10]
 
 from importlib.machinery import SourceFileLoader
+from pathlib import Path
 i66c = SourceFileLoader("i66c", os.path.join(PROJECT_ROOT, "code", "I", "I066c-linear-calibration.py")).load_module()
 
 
@@ -152,7 +153,7 @@ def main():
     print(f"  pAUC[0,0.10] 最高: {max(rows, key=lambda r: r['pauc_0_10'])['name']}")
     print("=" * 82)
 
-    with open(REPORT, "w", encoding="utf-8") as f:
+    with Path(REPORT).open("w", encoding="utf-8") as f:
         json.dump(rows, f, indent=2, ensure_ascii=False)
     print(f"\n  Report: {REPORT}")
     print(f"Completed in {time.time()-t0:.1f}s")

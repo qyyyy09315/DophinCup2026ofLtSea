@@ -23,6 +23,7 @@ from sklearn.metrics import (f1_score, precision_score, recall_score,
                              roc_auc_score)
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
@@ -155,7 +156,7 @@ def main():
     gain = best_f1 - baseline
 
     if not (gen_sub and gain > 0.001):
-        with open(REPORT_PATH, "w", encoding="utf-8") as f:
+        with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
             json.dump(report, f, ensure_ascii=False, indent=2)
         print(f"  报告: {REPORT_PATH}")
         print("=" * 60)
@@ -207,7 +208,7 @@ def main():
     print(f"  提交已覆盖: {SUB_PATH}")
 
     print("[5/5] 报告...")
-    with open(REPORT_PATH, "w", encoding="utf-8") as f:
+    with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print(f"  报告: {REPORT_PATH}")
     print("=" * 60)

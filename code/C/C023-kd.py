@@ -37,6 +37,7 @@ import torch.nn.functional as F
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+from pathlib import Path
 
 SRC = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(os.path.dirname(SRC))
@@ -108,7 +109,7 @@ def f1_05(p, y):
 
 def load_teacher(n_labels):
     teacher = c005.MultiScaleCNNCSRA(n_labels=n_labels).to(DEVICE)
-    ckpt = torch.load(c005.MODEL_PATH, map_location=DEVICE, weights_only=False)
+    ckpt = torch.load(c005.MODEL_PATH, map_location=DEVICE, weights_only=True)
     state = ckpt["state_dict"] if isinstance(ckpt, dict) and "state_dict" in ckpt else ckpt
     teacher.load_state_dict(state)
     teacher.eval()
@@ -220,7 +221,7 @@ def train_model(model, teacher, tr_loader, va_loader, y_val):
 
     auto_resume = (not FRESH) and os.path.exists(LAST_PATH)
     if auto_resume:
-        ckpt = torch.load(LAST_PATH, map_location=DEVICE, weights_only=False)
+        ckpt = torch.load(LAST_PATH, map_location=DEVICE, weights_only=True)
         model.load_state_dict(ckpt["state_dict"])
         if "optimizer" in ckpt:
             opt.load_state_dict(ckpt["optimizer"])
@@ -310,14 +311,14 @@ def main():
     if EVAL_ONLY:
         if not os.path.exists(MODEL_PATH):
             raise FileNotFoundError(MODEL_PATH)
-        ckpt = torch.load(MODEL_PATH, map_location=DEVICE, weights_only=False)
+        ckpt = torch.load(MODEL_PATH, map_location=DEVICE, weights_only=True)
         model.load_state_dict(ckpt["state_dict"] if "state_dict" in ckpt else ckpt)
         best_epoch, best_f1 = ckpt.get("best_epoch"), ckpt.get("best_f1")
     else:
         print("[train] ...")
         best_epoch, best_f1 = train_model(
             model, teacher, tr_loader, va_loader, y_val)
-        ckpt = torch.load(MODEL_PATH, map_location=DEVICE, weights_only=False)
+        ckpt = torch.load(MODEL_PATH, map_location=DEVICE, weights_only=True)
         model.load_state_dict(ckpt["state_dict"] if "state_dict" in ckpt else ckpt)
 
     print("[infer] ...")
@@ -486,7 +487,7 @@ def main():
         report["submit_alpha"] = alpha
         print(f"  提交: {sub_path}")
 
-    with open(REPORT_PATH, "w", encoding="utf-8") as f:
+    with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print(f"  报告: {REPORT_PATH}")
     print(f"  概率: {PROBS_PATH}")

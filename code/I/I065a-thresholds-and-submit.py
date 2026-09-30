@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score
+from pathlib import Path
 
 PROJECT_ROOT = r"F:\FOR_PYTHON\project\26海豚杯"
 REL_DIR = os.path.join(PROJECT_ROOT, "rel")
@@ -283,7 +284,7 @@ def main():
     rep = {"w_plm": W_PLM, "val_f1": val_f1, "val_auc": val_auc,
            "delta_vs_c011a": val_f1 - 0.4453, "delta_vs_i060": val_f1 - 0.4471,
            "test_rescued_orphans": n_rescued}
-    with open(os.path.join(REL_DIR, "I065_report.json"), "w", encoding="utf-8") as f:
+    with Path(os.path.join(REL_DIR, "I065_report.json")).open("w", encoding="utf-8") as f:
         json.dump(rep, f, indent=2)
     print(f"\nCompleted in {time.time()-t0:.1f}s")
 

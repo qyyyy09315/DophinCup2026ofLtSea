@@ -34,6 +34,7 @@ import pandas as pd
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
@@ -363,7 +364,7 @@ def main():
     }
 
     if not (gen_sub and useful):
-        with open(REPORT_PATH, "w", encoding="utf-8") as f:
+        with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
             json.dump(report, f, ensure_ascii=False, indent=2)
         print(f"  报告: {REPORT_PATH}")
         print("=" * 60)
@@ -395,7 +396,7 @@ def main():
     sub_path = os.path.join(SUB_DIR, "submission_I006a_ensemble.csv")
     sub.to_csv(sub_path, index=False)
     report["submission"] = sub_path
-    with open(REPORT_PATH, "w", encoding="utf-8") as f:
+    with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print(f"  提交: {sub_path} ({len(sub)} 行)")
     print("=" * 60)

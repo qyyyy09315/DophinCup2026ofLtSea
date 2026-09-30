@@ -26,6 +26,7 @@ import torch.nn as nn
 from torch.utils.data import TensorDataset, DataLoader
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score, roc_curve, auc as sk_auc
+from pathlib import Path
 
 PROJECT_ROOT = r"F:\FOR_PYTHON\project\26海豚杯"
 REL_DIR = os.path.join(PROJECT_ROOT, "rel")
@@ -231,7 +232,7 @@ def main():
                   f"dR@0.069={v['r@0.069']-base['r@0.069']:+.4f}")
         print("=" * 84)
 
-    with open(REPORT, "w", encoding="utf-8") as f:
+    with Path(REPORT).open("w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
     print(f"\n  Report: {REPORT}")
     print(f"Completed in {(time.time()-t0)/60:.1f} min")

@@ -37,6 +37,7 @@ from tqdm import tqdm
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(PROJECT_ROOT, "code", "C"))
 import importlib.util
+from pathlib import Path
 
 _spec = importlib.util.spec_from_file_location(
     "c002b", os.path.join(PROJECT_ROOT, "code", "C", "C002b-cnn.py"))
@@ -354,7 +355,7 @@ def main():
     }
 
     if not (gen_sub and useful):
-        with open(REPORT_PATH, "w", encoding="utf-8") as f:
+        with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
             json.dump(report, f, ensure_ascii=False, indent=2)
         print(f"  报告: {REPORT_PATH}")
         print("=" * 60)
@@ -380,7 +381,7 @@ def main():
     sub.to_csv(sub_path, index=False)
     np.savez_compressed(PROBS_PATH, cnn_val=cnn_tta, cnn_test=cnn_te)
     report["submission"] = sub_path
-    with open(REPORT_PATH, "w", encoding="utf-8") as f:
+    with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print(f"  提交: {sub_path} ({len(sub)} 行)")
     print("=" * 60)

@@ -185,7 +185,7 @@ def train_one_seed(seed, X_tr, y_tr, X_va, y_va, in_dim):
 
 def predict_test(seed, X_te, in_dim):
     model = PlmResidualMLP(in_dim).cuda()
-    model.load_state_dict(torch.load(os.path.join(MODEL_DIR, f"multi_plm_mlp_seed{seed}.pt")))
+    model.load_state_dict(torch.load(os.path.join(MODEL_DIR, f"multi_plm_mlp_seed{seed}.pt"), weights_only=True))
     model.eval()
     loader = DataLoader(TensorDataset(torch.from_numpy(X_te)), batch_size=BATCH, shuffle=False)
     out = []

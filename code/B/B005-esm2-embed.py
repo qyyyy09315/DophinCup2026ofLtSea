@@ -18,6 +18,7 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 from transformers import EsmTokenizer, EsmModel
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
@@ -120,7 +121,7 @@ def main():
         "test_samples": len(test),
         "total_time_seconds": round(time.time() - t_start, 1),
     }
-    with open(INFO_PATH, "w", encoding="utf-8") as f:
+    with Path(INFO_PATH).open("w", encoding="utf-8") as f:
         json.dump(info, f, ensure_ascii=False, indent=2)
 
     print(f"  保存: {TRAIN_EMB_PATH}, {TEST_EMB_PATH}")

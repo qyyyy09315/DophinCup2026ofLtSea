@@ -28,6 +28,7 @@ W_PLM = 0.35
 SIZE_LIMIT_MB = 50.0
 
 from importlib.machinery import SourceFileLoader
+from pathlib import Path
 i66c = SourceFileLoader("i66c", os.path.join(PROJECT_ROOT, "code", "I", "I066c-linear-calibration.py")).load_module()
 
 
@@ -121,7 +122,7 @@ def write_compact(arr, pids, label_cols, fmt_fn, path):
     for i in range(arr.shape[0]):
         cells = [fmt_fn(v) for v in arr[i]]
         lines.append(str(pids[i]) + "," + ",".join(cells))
-    with open(path, "w", encoding="utf-8", newline="") as f:
+    with Path(path).open("w", encoding="utf-8", newline="") as f:
         f.write("\n".join(lines) + "\n")
     return os.path.getsize(path) / 1024 / 1024
 
@@ -200,7 +201,7 @@ def main():
         print("\n  无合规的浮点格式；需退回二值 (28MB)")
 
     rep = {"auc_ref": auc_ref, "candidates": results, "written": written, "chosen": best}
-    with open(REPORT, "w", encoding="utf-8") as f:
+    with Path(REPORT).open("w", encoding="utf-8") as f:
         json.dump(rep, f, indent=2, ensure_ascii=False)
     print(f"\n  Report: {REPORT}")
     print(f"Completed in {time.time()-t0:.1f}s")

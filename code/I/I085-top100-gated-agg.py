@@ -150,7 +150,7 @@ def main():
     idx100, bits100 = parse_topk(ALN100, val_pids, train_map)
     hit = idx100[:, 0] >= 0
     miss = ~hit
-    print(f"  命中率 {hit.mean():.3f} | 每查询命中数中位 {int((idx100 >= 0).sum(1).clip(0, 100).astype(float).median())}")
+    print(f"  命中率 {hit.mean():.3f} | 每查询命中数中位 {int(np.median((idx100 >= 0).sum(1).clip(0, 100)))}")
 
     v2v = {}
     with open(os.path.join(CK005A_TMP, "align_val_to_val_e0.001.tsv")) as f:

@@ -2,6 +2,7 @@ import os, sys, time, subprocess
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
+from pathlib import Path
 
 PROJECT_ROOT = r"F:\FOR_PYTHON\project\26海豚杯"
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
@@ -21,7 +22,7 @@ train_fasta = os.path.join(DATA_DIR, "train.fasta")
 test_fasta = os.path.join(DATA_DIR, "test.fasta")
 
 if not os.path.exists(train_fasta):
-    with open(train_fasta, "w") as f:
+    with Path(train_fasta).open("w") as f:
         for pid, seq in zip(train_df["protein_id"], train_df["sequence"]):
             f.write(f">{pid}\n{seq}\n")
     print(f"  Wrote {train_fasta} ({len(train_df)} sequences)")
@@ -29,7 +30,7 @@ else:
     print(f"  {train_fasta} already exists.")
 
 if not os.path.exists(test_fasta):
-    with open(test_fasta, "w") as f:
+    with Path(test_fasta).open("w") as f:
         for pid, seq in zip(test_df["protein_id"], test_df["sequence"]):
             f.write(f">{pid}\n{seq}\n")
     print(f"  Wrote {test_fasta} ({len(test_df)} sequences)")
@@ -45,13 +46,13 @@ tr_split_fasta = os.path.join(DATA_DIR, "train_split.fasta")
 va_split_fasta = os.path.join(DATA_DIR, "val_split.fasta")
 
 if not os.path.exists(tr_split_fasta):
-    with open(tr_split_fasta, "w") as f:
+    with Path(tr_split_fasta).open("w") as f:
         for pid, seq in zip(train_df["protein_id"].values[idx_train], train_df["sequence"].values[idx_train]):
             f.write(f">{pid}\n{seq}\n")
     print(f"  Wrote {tr_split_fasta} ({len(idx_train)} sequences)")
 
 if not os.path.exists(va_split_fasta):
-    with open(va_split_fasta, "w") as f:
+    with Path(va_split_fasta).open("w") as f:
         for pid, seq in zip(train_df["protein_id"].values[idx_val], train_df["sequence"].values[idx_val]):
             f.write(f">{pid}\n{seq}\n")
     print(f"  Wrote {va_split_fasta} ({len(idx_val)} sequences)")
@@ -62,14 +63,17 @@ def run_diamond_self(fasta_path, out_tsv, db_name):
     dmnd_db = os.path.join(CK005A_TMP, f"{db_name}.dmnd")
     if not os.path.exists(dmnd_db):
         print(f"  Makedb: {dmnd_db} ...")
-        cmd_db = f'"{DIAMOND_EXE}" makedb --in "{fasta_path}" -d "{dmnd_db}" --quiet'
-        subprocess.run(cmd_db, shell=True, check=True)
+        cmd_db = [DIAMOND_EXE, "makedb", "--in", fasta_path, "-d", dmnd_db, "--quiet"]
+        subprocess.run(cmd_db, check=True)
     
     if not os.path.exists(out_tsv):
         print(f"  Aligning: {fasta_path} against {dmnd_db} -> {out_tsv} ...")
         # 输出格式 6: qseqid sseqid bitscore evalue pident length
-        cmd_aln = f'"{DIAMOND_EXE}" blastp -q "{fasta_path}" -d "{dmnd_db}" -o "{out_tsv}" --very-sensitive -e 0.001 --outfmt 6 qseqid sseqid bitscore evalue pident length --max-target-seqs 10 --threads 8 --quiet'
-        subprocess.run(cmd_aln, shell=True, check=True)
+        cmd_aln = [DIAMOND_EXE, "blastp", "-q", fasta_path, "-d", dmnd_db, "-o", out_tsv,
+                   "--very-sensitive", "-e", "0.001", "--outfmt",
+                   "6 qseqid sseqid bitscore evalue pident length",
+                   "--max-target-seqs", "10", "--threads", "8", "--quiet"]
+        subprocess.run(cmd_aln, check=True)
         print(f"  Finished: {out_tsv} ({os.path.getsize(out_tsv)/1024/1024:.2f} MB)")
     else:
         print(f"  {out_tsv} already exists.")

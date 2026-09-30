@@ -17,7 +17,7 @@ for start_r in range(0, 260, 50):
         "end_col": 15
     }
     cmd = ["mcporter", "call", "tencent-docs", "sheet.get_cell_data", "--args", json.dumps(payload)]
-    p = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+    p = subprocess.run(cmd, capture_output=True, text=True)
     try:
         data = json.loads(p.stdout)
         cells = data.get("cells", [])

@@ -46,6 +46,7 @@ from tqdm import tqdm
 
 from peft import LoraConfig, TaskType, get_peft_model
 from transformers import EsmForSequenceClassification
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 REL_DIR = os.path.join(PROJECT_ROOT, "rel")
@@ -196,7 +197,7 @@ def save_last(path, model, opt, sched, scaler, epoch, step, best_f1, best_epoch,
 
 def load_ckpt(path, map_location="cuda"):
     # PyTorch 2.6 默认 weights_only=True，last.pt 含 optimizer/scaler 的 numpy 标量
-    return torch.load(path, map_location=map_location, weights_only=False)
+    return torch.load(path, map_location=map_location, weights_only=True)
 
 
 @torch.no_grad()
@@ -477,7 +478,7 @@ def main():
             if useful_ind else "650M LoRA 未超 C002b 0.2714，关闭该骨干"
         ),
     }
-    with open(REPORT_PATH, "w", encoding="utf-8") as f:
+    with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print(f"  报告 {REPORT_PATH}  用时 {report['seconds']}s")
     print("=" * 60)

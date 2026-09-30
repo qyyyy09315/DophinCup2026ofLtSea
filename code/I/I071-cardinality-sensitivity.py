@@ -25,6 +25,7 @@ N_LABELS = 500
 W_PLM = 0.35
 
 from importlib.machinery import SourceFileLoader
+from pathlib import Path
 i66c = SourceFileLoader("i66c", os.path.join(PROJECT_ROOT, "code", "I", "I066c-linear-calibration.py")).load_module()
 
 
@@ -191,7 +192,7 @@ def main():
     r2, p2, a2 = macro_pr_from_pred(rcut_predict(S, pred_card2), y_va)
     res.update({"rcut_profile_recall": r1, "rcut_profile_precision": p1, "rcut_profile_auc": a1,
                 "rcut_esm_recall": r2, "rcut_esm_precision": p2, "rcut_esm_auc": a2})
-    with open(REPORT, "w", encoding="utf-8") as f:
+    with Path(REPORT).open("w", encoding="utf-8") as f:
         json.dump(res, f, indent=2, ensure_ascii=False)
     print(f"\n  Report: {REPORT}")
     print(f"Completed in {time.time()-t0:.1f}s")

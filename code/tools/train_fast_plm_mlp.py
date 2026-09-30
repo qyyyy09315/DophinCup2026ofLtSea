@@ -184,7 +184,7 @@ print(f"Saved validation probabilities to {VAL_PROBS_OUT}")
 
 # 4. 推理测试集
 print("\n4. Predicting Test set...")
-model.load_state_dict(torch.load(MODEL_OUT))
+model.load_state_dict(torch.load(MODEL_OUT, weights_only=True))
 model.eval()
 test_preds_list = []
 with torch.no_grad():

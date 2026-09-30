@@ -21,6 +21,7 @@ import hashlib
 import json
 import os
 import re
+import ssl
 import time
 import urllib.error
 import urllib.parse
@@ -50,6 +51,33 @@ def is_pdf(data: bytes) -> bool:
     return data[:5] == b"%PDF-" and (b"%%EOF" in data[-4096:] or len(data) > 200_000)
 
 
+ALLOWED_HOSTS = {
+    "arxiv.org", "export.arxiv.org", "www.biorxiv.org", "www.medrxiv.org",
+    "openreview.net", "proceedings.iclr.cc", "ceur-ws.org", "papers.nips.cc",
+    "proceedings.neurips.cc", "api.unpaywall.org", "www.ebi.ac.uk",
+    "europepmc.org", "www.ncbi.nlm.nih.gov", "patents.google.com",
+    "patentimages.storage.googleapis.com", "www.csie.ntu.edu.tw",
+    "huggingface.co", "hf-mirror.com", "www.modelscope.cn",
+    "academic.oup.com", "www.dcs.gla.ac.uk",
+}
+
+
+def guard_url(url: str) -> None:
+    """SSRF 防护（CWE-918）：协议限定 https、主机白名单、解析后阻断私网/环回/链路本地，重定向每跳复验由 get_pdf 的 hops 复验承担"""
+    import ipaddress
+    import socket
+    p = urllib.parse.urlparse(url)
+    if p.scheme != "https":
+        raise ValueError(f"协议不允许: {p.scheme}")
+    host = p.hostname or ""
+    if not any(host == h or host.endswith("." + h) for h in ALLOWED_HOSTS):
+        raise ValueError(f"主机不在白名单: {host}")
+    for info in socket.getaddrinfo(host, p.port or 443):
+        ip = ipaddress.ip_address(info[4][0])
+        if ip.is_private or ip.is_loopback or ip.is_link_local:
+            raise ValueError(f"解析到受限地址: {ip}")
+
+
 def open_url(url: str, timeout: int = TIMEOUT):
     req = urllib.request.Request(
         url,
@@ -58,7 +86,15 @@ def open_url(url: str, timeout: int = TIMEOUT):
             "Accept": "application/pdf,text/html,*/*",
         },
     )
-    return urllib.request.urlopen(req, timeout=timeout)
+    guard_url(url)
+    try:
+        return urllib.request.urlopen(req, timeout=timeout)
+    except urllib.error.URLError as e:
+        # 学术站证书链不全（如 csie.ntu.edu.tw）：降级不校验证书重试，仅限公开 PDF 拉取
+        if "CERTIFICATE_VERIFY_FAILED" not in str(e):
+            raise
+        ctx = ssl._create_unverified_context()
+        return urllib.request.urlopen(req, timeout=timeout, context=ctx)
 
 
 def get(url: str) -> bytes | None:
@@ -230,10 +266,17 @@ def candidate_urls(e: dict) -> list[str]:
             )
         if "ceur-ws.org" in u and u.endswith(".pdf"):
             urls.append(u)
-        if "papers.nips.cc" in u and "/hash/" in u:
-            h = u.split("/hash/")[-1]
-            urls.append(f"https://papers.nips.cc/paper_files/paper/2018/file/{h}-Paper.pdf")
-            urls.append(f"https://proceedings.neurips.cc/paper/2018/file/{h}-Paper.pdf")
+        if ("papers.nips.cc" in u or "proceedings.neurips.cc" in u) and "/hash/" in u:
+            h = u.split("/hash/")[-1].split("-")[0]
+            ym = re.search(r"/paper/(\d{4})/", u)
+            y = ym.group(1) if ym else "2018"
+            urls.append(f"https://papers.nips.cc/paper_files/paper/{y}/file/{h}-Paper.pdf")
+            urls.append(f"https://proceedings.neurips.cc/paper_files/paper/{y}/file/{h}-Paper.pdf")
+            urls.append(f"https://proceedings.neurips.cc/paper_files/paper/{y}/file/{h}-Paper-Conference.pdf")
+            urls.append(u)
+        if re.match(r"https://papers\.nips\.cc/paper/\d+-", u):
+            urls.append(u + ".pdf")
+            urls.append(u)
         if "patents.google.com/patent/" in u:
             pid = u.split("/patent/")[-1].split("/")[0]
             urls.append(f"https://patents.google.com/patent/{pid}.pdf")

@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { execSync } = require("child_process");
+const { execSync, execFileSync } = require('child_process');
 
 const PROJECT_ROOT = path.resolve(__dirname, "../..");
 const TMP_DIR = path.join(PROJECT_ROOT, "tmp");
@@ -56,7 +56,8 @@ for (let i = 0; i < allCells.length; i += batchSize) {
   };
   fs.writeFileSync(tempArgFile, JSON.stringify(payload), "utf-8");
   try {
-    execSync(`mcporter call tencent-docs sheet.set_range_value --args "$(cat '${tempArgFile}')"`, { shell: "bash" });
+    const argsJson = fs.readFileSync(tempArgFile, "utf-8");
+    execFileSync("mcporter", ["call", "tencent-docs", "sheet.set_range_value", "--args", argsJson], { shell: false });
     if (Math.floor(i / batchSize) % 15 === 0 || i + batch.length >= allCells.length) {
       const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
       console.log(`  Updated ${i + batch.length} / ${allCells.length} cells in ${elapsed}s`);

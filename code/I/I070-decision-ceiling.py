@@ -30,6 +30,7 @@ N_LABELS = 500
 W_PLM = 0.35
 
 from importlib.machinery import SourceFileLoader
+from pathlib import Path
 i66c = SourceFileLoader("i66c", os.path.join(PROJECT_ROOT, "code", "I", "I066c-linear-calibration.py")).load_module()
 
 
@@ -172,7 +173,7 @@ def main():
     print(f"  空间: {f1B - f1A:+.4f} (RCut) / {bestC - f1A:+.4f} (Fmax)")
     print("=" * 76)
 
-    with open(REPORT, "w", encoding="utf-8") as f:
+    with Path(REPORT).open("w", encoding="utf-8") as f:
         json.dump(res, f, indent=2, ensure_ascii=False)
     print(f"\n  Report: {REPORT}")
     print(f"Completed in {time.time()-t0:.1f}s")

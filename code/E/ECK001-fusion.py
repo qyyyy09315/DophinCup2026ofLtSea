@@ -38,6 +38,7 @@ import torch
 from sklearn.metrics import f1_score, roc_auc_score
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 REL_DIR = os.path.join(PROJECT_ROOT, "rel")
@@ -311,7 +312,7 @@ def main():
     if not gen_sub or f1_100 <= 0.4359 + 0.001:
         if f1_100 <= 0.4359 + 0.001:
             report["submission"] = "none (未超 CK005 基线)"
-        with open(f"{REL_DIR}/E003_fusion_report.json", "w", encoding="utf-8") as f:
+        with Path(f"{REL_DIR}/E003_fusion_report.json").open("w", encoding="utf-8") as f:
             json.dump(report, f, ensure_ascii=False, indent=2)
         print(f"  报告: {REL_DIR}/E003_fusion_report.json")
         print("=" * 60)
@@ -348,7 +349,7 @@ def main():
     sub_path = f"{SUB_DIR}/submission_E003_fusion.csv"
     submission.to_csv(sub_path, index=False)
     report["submission"] = sub_path
-    with open(f"{REL_DIR}/E003_fusion_report.json", "w", encoding="utf-8") as f:
+    with Path(f"{REL_DIR}/E003_fusion_report.json").open("w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print(f"  提交: {sub_path} ({len(submission)} 行)")
     print(f"  报告: {REL_DIR}/E003_fusion_report.json")

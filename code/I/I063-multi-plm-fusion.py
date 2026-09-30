@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score
+from pathlib import Path
 
 PROJECT_ROOT = r"F:\FOR_PYTHON\project\26海豚杯"
 REL_DIR = os.path.join(PROJECT_ROOT, "rel")
@@ -256,7 +257,7 @@ def main():
         print(f"  Copied to Desktop: submission_I063_ensemble.csv")
         print(f"  Pred mean cardinality: {y_pred.sum(1).mean():.2f}")
 
-    with open(REPORT, "w", encoding="utf-8") as f:
+    with Path(REPORT).open("w", encoding="utf-8") as f:
         json.dump({"best_w_plm": best_w, "val_f1": best_f1,
                    "delta_vs_c011a": best_f1-0.4453, "delta_vs_i060": best_f1-0.4471}, f, indent=2)
     print(f"\nCompleted in {time.time()-t0:.1f}s")

@@ -19,6 +19,7 @@ N_LABELS = 500
 
 sys.path.insert(0, os.path.join(PROJECT_ROOT, "code", "I"))
 from importlib.machinery import SourceFileLoader
+from pathlib import Path
 i066 = SourceFileLoader("i066", os.path.join(PROJECT_ROOT, "code", "I", "I066-residue-attention.py")).load_module()
 
 
@@ -62,7 +63,7 @@ def main():
     va_loader = torch.utils.data.DataLoader(va_ds, batch_size=192, shuffle=False, num_workers=0)
 
     model = i066.ResidueAttentionHead().cuda()
-    model.load_state_dict(torch.load(CKPT, map_location="cuda"))
+    model.load_state_dict(torch.load(CKPT, map_location="cuda", weights_only=True))
     model.eval()
 
     print("  Predicting validation (mmap read ~7.4GB)...")
@@ -88,7 +89,7 @@ def main():
            "recall": rec, "precision": prec,
            "ref_1664d_multiseed": {"f1": 0.2729, "auc": 0.7947}}
     np.savez_compressed(os.path.join(REL_DIR, "resattn_ckpt_val_probs.npz"), val=probs)
-    with open(os.path.join(REL_DIR, "resattn_ckpt_eval.json"), "w", encoding="utf-8") as f:
+    with Path(os.path.join(REL_DIR, "resattn_ckpt_eval.json")).open("w", encoding="utf-8") as f:
         json.dump(out, f, indent=2)
     print(f"\n  Saved: rel/resattn_ckpt_eval.json + resattn_ckpt_val_probs.npz")
     print(f"  Done in {(time.time()-t0)/60:.1f} min")

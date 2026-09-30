@@ -29,6 +29,7 @@ import torch
 from sklearn.metrics import roc_auc_score, f1_score
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 REL_DIR = os.path.join(PROJECT_ROOT, "rel")
@@ -176,7 +177,7 @@ def main():
            "prior_baseline": {"f1": round(f1_prior, 4)},
            "top1_overlap": round(float(y_overlap.mean()), 4),
            "seconds": round(time.time() - t0)}
-    with open(f"{REL_DIR}/E003_probe_report.json", "w", encoding="utf-8") as f:
+    with Path(f"{REL_DIR}/E003_probe_report.json").open("w", encoding="utf-8") as f:
         json.dump(rep, f, ensure_ascii=False, indent=2)
     print(f"\n报告: {REL_DIR}/E003_probe_report.json | 总耗时 {time.time()-t0:.0f}s")
 

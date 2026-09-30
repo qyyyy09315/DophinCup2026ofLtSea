@@ -18,6 +18,7 @@ import time
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -123,7 +124,7 @@ def main():
         "拷贝独有格真标签多于假，可开决策并集"
         if worth else "拷贝独有格假标签不少，决策并集价值低"
     )
-    with open(REPORT_PATH, "w", encoding="utf-8") as f:
+    with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
         json.dump(rec, f, ensure_ascii=False, indent=2)
     print(f"  strong={rec['n_strong']} copy_only tp={rec['copy_only_tp']} "
           f"fp={rec['copy_only_fp']} prec={rec['copy_only_prec']}")

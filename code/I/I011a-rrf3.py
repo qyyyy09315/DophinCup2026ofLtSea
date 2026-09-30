@@ -27,6 +27,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 _spec = importlib.util.spec_from_file_location(
@@ -175,7 +176,7 @@ def main():
         "oof_grid": oof_rows,
         "seconds": round(time.time() - t0, 1),
     }
-    with open(REPORT_PATH, "w", encoding="utf-8") as f:
+    with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print(f"  报告: {REPORT_PATH}")
 
@@ -214,7 +215,7 @@ def main():
         sub_path = os.path.join(SUB_DIR, "submission_I011a_ensemble.csv")
         sub.to_csv(sub_path, index=False)
         report["submission"] = sub_path
-        with open(REPORT_PATH, "w", encoding="utf-8") as f:
+        with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
             json.dump(report, f, ensure_ascii=False, indent=2)
         print(f"  提交: {sub_path}")
     print("=" * 60)

@@ -43,6 +43,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+from pathlib import Path
 
 SRC = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(os.path.dirname(SRC))
@@ -108,7 +109,7 @@ def train_seed(seed, n_epochs, lazy_tokens=False):
     ckpt = f"{MODEL_DIR}/c004a-seed{seed}.pt"
     if os.path.exists(ckpt):
         print(f"  已有 checkpoint，跳过训练: {ckpt}", flush=True)
-        model.load_state_dict(torch.load(ckpt, map_location="cuda"))
+        model.load_state_dict(torch.load(ckpt, map_location="cuda", weights_only=True))
         return {"val": evaluate_probs(model, va_loader), "test": evaluate_probs(model, te_loader)}
     criterion = c002b.AsymmetricLoss().cuda()
     opt = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=1e-5)
@@ -141,7 +142,7 @@ def train_seed(seed, n_epochs, lazy_tokens=False):
 
     ckpt = f"{MODEL_DIR}/c004a-seed{seed}.pt"
     if os.path.exists(ckpt):
-        model.load_state_dict(torch.load(ckpt, map_location="cuda"))
+        model.load_state_dict(torch.load(ckpt, map_location="cuda", weights_only=True))
     probs_val = evaluate_probs(model, va_loader)
     probs_test = evaluate_probs(model, te_loader)
     return {"val": probs_val, "test": probs_test}
@@ -404,7 +405,7 @@ def main():
         report["submission"] = sub_path
         print(f"  提交: {sub_path}")
 
-    with open(f"{REL_DIR}/C004a_bag_report.json", "w", encoding="utf-8") as f:
+    with Path(f"{REL_DIR}/C004a_bag_report.json").open("w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print(f"  报告: {REL_DIR}/C004a_bag_report.json")
     print(f"  种子数: {n_seeds} (42 + {seeds_new})")

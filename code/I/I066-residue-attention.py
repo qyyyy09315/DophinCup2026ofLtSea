@@ -190,7 +190,7 @@ def main():
         seed_probs.append(best_p)
         print(f"  seed{seed} FINAL F1={best_f1:.4f}")
         # 保存该种子测试概率
-        model.load_state_dict(torch.load(os.path.join(MODEL_DIR, f"resattn_s{seed}.pt")))
+        model.load_state_dict(torch.load(os.path.join(MODEL_DIR, f"resattn_s{seed}.pt"), weights_only=True))
         te_p = predict(model, te_loader)
         np.savez_compressed(os.path.join(REL_DIR, f"resattn_test_s{seed}.npz"), test=te_p)
         print(f"  seed{seed} test probs saved")

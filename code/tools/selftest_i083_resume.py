@@ -22,6 +22,7 @@ I083 断点续跑机制自测（CPU-only：不加载模型、不占 GPU）
 import os, sys, io, time, json, shutil, hashlib, threading, _thread, contextlib, traceback
 import numpy as np
 from importlib.machinery import SourceFileLoader
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 I083_PATH = os.path.join(PROJECT_ROOT, "code", "I", "I083-esm2-650m-embed.py")
@@ -261,7 +262,7 @@ def main():
         def edit_prog(fn):
             st = json.load(open(pg, encoding="utf-8"))
             fn(st)
-            json.dump(st, open(pg, "w", encoding="utf-8"), ensure_ascii=False)
+            json.dump(st, Path(pg).open("w", encoding="utf-8"), ensure_ascii=False)
 
         tamper("指纹不一致",
                lambda: edit_prog(lambda s: s.__setitem__("fingerprint", "deadbeefdeadbeef")), "指纹")

@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score
+from pathlib import Path
 
 PROJECT_ROOT = r"F:\FOR_PYTHON\project\26海豚杯"
 REL_DIR = os.path.join(PROJECT_ROOT, "rel")
@@ -309,7 +310,7 @@ def main():
            "cal_auc_unrounded": auc_cal, "cal_auc_rounded": auc_cal_r,
            "cal_f1_at_0.5": f1_cal_half, "cal_f1_scut": f1_cal_scut,
            "auc_loss_from_rounding": auc_raw - auc_cal_r}
-    with open(REPORT, "w", encoding="utf-8") as f:
+    with Path(REPORT).open("w", encoding="utf-8") as f:
         json.dump(rep, f, indent=2)
     print(f"\n  Report: {REPORT}")
     print(f"Completed in {time.time()-t0:.1f}s")

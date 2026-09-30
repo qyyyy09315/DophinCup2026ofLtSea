@@ -29,6 +29,7 @@ SIZE_LIMIT_MB = 90.0
 
 # ---------------- 复用 I066c 的管线 ----------------
 from importlib.machinery import SourceFileLoader
+from pathlib import Path
 _i66c = SourceFileLoader("i66c", os.path.join(PROJECT_ROOT, "code", "I", "I066c-linear-calibration.py")).load_module()
 
 
@@ -190,7 +191,7 @@ def main():
                 cells.append(s)
             lines.append(str(pids[i]) + "," + ",".join(cells))
         out = os.path.join(SUB_DIR, "submission_I067_prob_compact.csv")
-        with open(out, "w", encoding="utf-8", newline="") as f:
+        with Path(out).open("w", encoding="utf-8", newline="") as f:
             f.write("\n".join(lines) + "\n")
         size_mb = os.path.getsize(out) / 1024 / 1024
         print(f"  Written: {out}")
@@ -204,7 +205,7 @@ def main():
 
         if size_mb <= SIZE_LIMIT_MB:
             dst = r"C:\Users\YKSHb\Desktop\submission_I067_prob_compact.csv"
-            with open(dst, "w", encoding="utf-8", newline="") as f:
+            with Path(dst).open("w", encoding="utf-8", newline="") as f:
                 f.write("\n".join(lines) + "\n")
             print(f"  Copied to Desktop: submission_I067_prob_compact.csv")
             rep = {"decimals": chosen, "auc_loss": float(variants[chosen]["auc_loss"]),
@@ -216,7 +217,7 @@ def main():
     else:
         rep = {"decimals": None, "note": "2位小数仍超限，改用二值"}
 
-    with open(REPORT, "w", encoding="utf-8") as f:
+    with Path(REPORT).open("w", encoding="utf-8") as f:
         json.dump(rep, f, indent=2, ensure_ascii=False)
     print(f"\n  Report: {REPORT}")
     print(f"Completed in {time.time()-t0:.1f}s")

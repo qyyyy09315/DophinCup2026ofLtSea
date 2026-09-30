@@ -41,6 +41,7 @@ import torch.nn.functional as F
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+from pathlib import Path
 
 SRC = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(os.path.dirname(SRC))
@@ -247,7 +248,7 @@ def train_model(model, tr_loader, va_loader, y_val):
 
     auto_resume = (not FRESH) and os.path.exists(LAST_PATH)
     if auto_resume:
-        ckpt = torch.load(LAST_PATH, map_location=DEVICE, weights_only=False)
+        ckpt = torch.load(LAST_PATH, map_location=DEVICE, weights_only=True)
         model.load_state_dict(ckpt["state_dict"])
         if "optimizer" in ckpt:
             opt.load_state_dict(ckpt["optimizer"])
@@ -501,7 +502,7 @@ def main():
         report["submit_alpha"] = alpha
         print(f"  提交: {sub_path}")
 
-    with open(REPORT_PATH, "w", encoding="utf-8") as f:
+    with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print(f"  报告: {REPORT_PATH}")
     print(f"  概率: {PROBS_PATH}")

@@ -28,6 +28,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -212,7 +213,7 @@ def main():
         "seconds": round(time.time() - t0, 1),
     }
     os.makedirs(i011.REL_DIR, exist_ok=True)
-    with open(REPORT_PATH, "w", encoding="utf-8") as f:
+    with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print(f"  报告: {REPORT_PATH}")
     print(f"  用时 {report['seconds']}s")

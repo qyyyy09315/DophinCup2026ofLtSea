@@ -20,6 +20,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score
+from pathlib import Path
 
 PROJECT_ROOT = r"F:\FOR_PYTHON\project\26海豚杯"
 REL_DIR = os.path.join(PROJECT_ROOT, "rel")
@@ -314,7 +315,7 @@ def main():
         "auc_preserved": bool(abs(auc_cal - auc_raw) < 1e-6),
         "test_mean_prob": float(cal_t.mean()), "test_mean_card_binary": float(y_bin.sum(1).mean()),
     }
-    with open(REPORT, "w", encoding="utf-8") as f:
+    with Path(REPORT).open("w", encoding="utf-8") as f:
         json.dump(rep, f, indent=2)
     print(f"\n  Report: {REPORT}")
     print(f"Completed in {time.time()-t0:.1f}s")

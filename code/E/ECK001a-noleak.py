@@ -27,6 +27,7 @@ import pandas as pd
 from sklearn.metrics import f1_score
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
+from pathlib import Path
 
 SRC = os.path.dirname(os.path.abspath(__file__))
 spec = importlib.util.spec_from_file_location("eck001", os.path.join(SRC, "ECK001-fusion.py"))
@@ -202,7 +203,7 @@ def main():
     beat = f1_100 > 0.4359 + 0.001
     if not gen_sub or not beat:
         report["submission"] = "none" if not beat else "not generated (no --gen-sub)"
-        with open(f"{REL_DIR}/ECK001a_report.json", "w", encoding="utf-8") as f:
+        with Path(f"{REL_DIR}/ECK001a_report.json").open("w", encoding="utf-8") as f:
             json.dump(report, f, ensure_ascii=False, indent=2)
         print(f"  报告: {REL_DIR}/ECK001a_report.json")
         if not beat:
@@ -236,7 +237,7 @@ def main():
     sub_path = f"{SUB_DIR}/submission_ECK001a_noleak.csv"
     submission.to_csv(sub_path, index=False)
     report["submission"] = sub_path
-    with open(f"{REL_DIR}/ECK001a_report.json", "w", encoding="utf-8") as f:
+    with Path(f"{REL_DIR}/ECK001a_report.json").open("w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print(f"  提交: {sub_path} ({len(submission)} 行)")
     print(f"  报告: {REL_DIR}/ECK001a_report.json")

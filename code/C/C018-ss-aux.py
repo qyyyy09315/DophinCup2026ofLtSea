@@ -40,6 +40,7 @@ import ssl
 import subprocess
 import sys
 import time
+import urllib.parse
 import urllib.request
 
 import numpy as np
@@ -50,6 +51,7 @@ import torch.nn.functional as F
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+from pathlib import Path
 
 SRC = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(os.path.dirname(SRC))
@@ -226,9 +228,22 @@ def download_s4_tar(tar_path):
             last_err = e
             print(f"  curl 失败，改 urllib（跳过过期证书）: {e}", flush=True)
         try:
+            _p = urllib.parse.urlparse(url)
+            if _p.scheme != "https":
+                raise ValueError(f"协议不允许: {_p.scheme}")
+            _host = _p.hostname or ""
+            if not any(_host == h or _host.endswith("." + h)
+                       for h in ("github.com", "objects.githubusercontent.com")):
+                raise ValueError(f"主机不在白名单: {_host}")
+            import ipaddress as _ip
+            import socket as _sk
+            for _info in _sk.getaddrinfo(_host, _p.port or 443):
+                _addr = _ip.ip_address(_info[4][0])
+                if _addr.is_private or _addr.is_loopback or _addr.is_link_local:
+                    raise ValueError(f"解析到受限地址: {_addr}")
             ctx = ssl._create_unverified_context()
             with urllib.request.urlopen(url, context=ctx, timeout=120) as src:
-                with open(tar_path, "wb") as dst:
+                with Path(tar_path).open("wb") as dst:
                     while True:
                         chunk = src.read(1 << 20)
                         if not chunk:
@@ -269,7 +284,7 @@ def load_s4pred_teacher():
     ensure_s4_weights()
     net = GRUnet()
     path = os.path.join(S4_WEIGHT_DIR, "weights_1.pt")
-    net.load_state_dict(torch.load(path, map_location="cpu", weights_only=False))
+    net.load_state_dict(torch.load(path, map_location="cpu", weights_only=True))
     net.eval()
     for p in net.parameters():
         p.requires_grad = False
@@ -300,7 +315,7 @@ def acquire_dump_lock():
         raise RuntimeError(
             f"已有 C018 dump 在跑（lock pid={old}）。先停掉再手动续："
             f" {SS_LOCK}")
-    with open(SS_LOCK, "w", encoding="utf-8") as f:
+    with Path(SS_LOCK).open("w", encoding="utf-8") as f:
         f.write(str(os.getpid()))
 
 
@@ -513,7 +528,7 @@ def train_model(model, tr_loader, va_loader, y_val):
 
     auto_resume = (not FRESH) and os.path.exists(LAST_PATH)
     if auto_resume:
-        ckpt = torch.load(LAST_PATH, map_location=DEVICE, weights_only=False)
+        ckpt = torch.load(LAST_PATH, map_location=DEVICE, weights_only=True)
         model.load_state_dict(ckpt["state_dict"])
         if "optimizer" in ckpt:
             opt.load_state_dict(ckpt["optimizer"])
@@ -612,13 +627,13 @@ def main():
     if EVAL_ONLY:
         if not os.path.exists(MODEL_PATH):
             raise FileNotFoundError(MODEL_PATH)
-        ckpt = torch.load(MODEL_PATH, map_location=DEVICE, weights_only=False)
+        ckpt = torch.load(MODEL_PATH, map_location=DEVICE, weights_only=True)
         model.load_state_dict(ckpt["state_dict"] if "state_dict" in ckpt else ckpt)
         best_epoch, best_f1 = ckpt.get("best_epoch"), ckpt.get("best_f1")
     else:
         print("[train] ...")
         best_epoch, best_f1 = train_model(model, tr_loader, va_loader, y_val)
-        ckpt = torch.load(MODEL_PATH, map_location=DEVICE, weights_only=False)
+        ckpt = torch.load(MODEL_PATH, map_location=DEVICE, weights_only=True)
         model.load_state_dict(ckpt["state_dict"] if "state_dict" in ckpt else ckpt)
 
     print("[infer] ...")
@@ -786,7 +801,7 @@ def main():
         report["submit_alpha"] = alpha
         print(f"  提交: {sub_path}")
 
-    with open(REPORT_PATH, "w", encoding="utf-8") as f:
+    with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print(f"  报告: {REPORT_PATH}")
     print(f"  概率: {PROBS_PATH}")

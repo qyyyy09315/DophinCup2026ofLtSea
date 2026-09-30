@@ -18,6 +18,7 @@ import time
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 REL_DIR = os.path.join(PROJECT_ROOT, "rel")
@@ -317,7 +318,7 @@ def main():
         "seconds": round(time.time() - t0, 1),
         "note": "分析性，不写腾讯表",
     }
-    with open(REPORT_PATH, "w", encoding="utf-8") as f:
+    with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print(f"  报告 {REPORT_PATH}")
     print(f"  切片 {CSV_PATH}")

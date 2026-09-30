@@ -27,6 +27,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import (f1_score, precision_score, recall_score,
                              roc_auc_score)
 from sklearn.model_selection import train_test_split
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
@@ -230,7 +231,7 @@ def main():
         "delta_f1": round(f1_enh - f1_base, 6),
         "total_time_seconds": round(time.time() - t0, 1),
     }
-    with open(REPORT_PATH, "w", encoding="utf-8") as f:
+    with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
 
     if f1_enh > f1_base + 0.001:

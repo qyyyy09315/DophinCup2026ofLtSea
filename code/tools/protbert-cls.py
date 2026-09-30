@@ -20,6 +20,7 @@ from sklearn.metrics import (f1_score, precision_score, recall_score,
 from sklearn.model_selection import train_test_split
 from joblib import dump, Parallel, delayed
 from tqdm import tqdm
+from pathlib import Path
 
 REL_DIR = "rel"
 SUB_DIR = "submit"
@@ -169,7 +170,7 @@ def main():
         "val_total_positive_true": total_pos_true,
         "val_total_positive_pred": total_pos_pred,
     }
-    with open(METRICS_PATH, "w", encoding="utf-8") as f:
+    with Path(METRICS_PATH).open("w", encoding="utf-8") as f:
         json.dump(metrics, f, ensure_ascii=False, indent=2)
     print(f"  指标: {METRICS_PATH}")
 

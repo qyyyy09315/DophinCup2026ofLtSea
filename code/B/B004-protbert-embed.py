@@ -17,6 +17,7 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 from transformers import BertTokenizer, BertModel
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
@@ -117,7 +118,7 @@ def main():
         "embedding_dim": 1024,
         "total_time_seconds": round(time.time() - t_start, 1),
     }
-    with open(f"{REL_DIR}/protbert_embed_info.json", "w", encoding="utf-8") as f:
+    with Path(f"{REL_DIR}/protbert_embed_info.json").open("w", encoding="utf-8") as f:
         json.dump(info, f, ensure_ascii=False, indent=2)
 
     print(f"完成! 总耗时: {time.time() - t_start:.0f}s")

@@ -18,6 +18,7 @@ import time
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -141,7 +142,7 @@ def main():
             if worth else "独有 k-mer 标签不差于重叠，交集过滤价值低"
         ),
     }
-    with open(REPORT_PATH, "w", encoding="utf-8") as f:
+    with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print(f"  报告 {REPORT_PATH}  worth_inter={worth}")
     print("=" * 60)

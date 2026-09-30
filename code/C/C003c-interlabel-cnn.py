@@ -47,6 +47,7 @@ SRC = os.path.dirname(os.path.abspath(__file__))
 # 加载 C002b 的网络与数据配置 (import 需要规范化路径)
 sys.path.insert(0, SRC)
 import importlib.util
+from pathlib import Path
 spec = importlib.util.spec_from_file_location("c002b", os.path.join(SRC, "C002b-cnn.py"))
 c002b = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(c002b)
@@ -280,7 +281,7 @@ def main():
               "auc": round(ev["auc"], 4), "best_f1_100": round(best_f1, 4),
               "c002b_asl_baseline_f1_05": 0.2714,
               "submission": SUB_PATH, "seconds": round(time.time() - t0)}
-    with open(REPORT_PATH, "w", encoding="utf-8") as f:
+    with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print(f"  报告: {REPORT_PATH}")
     print(f"  提交: {SUB_PATH}")

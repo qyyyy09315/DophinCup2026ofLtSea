@@ -40,6 +40,7 @@ from tqdm import tqdm
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(PROJECT_ROOT, "code", "C"))
 import importlib.util
+from pathlib import Path
 
 _spec = importlib.util.spec_from_file_location(
     "c002b", os.path.join(PROJECT_ROOT, "code", "C", "C002b-cnn.py"))
@@ -223,7 +224,7 @@ def main():
         "seconds": round(time.time() - t_start),
         "submission": SUB_PATH,
     }
-    with open(REPORT_PATH, "w", encoding="utf-8") as f:
+    with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print(f"  报告: {REPORT_PATH}")
     print(f"  提交: {SUB_PATH}")

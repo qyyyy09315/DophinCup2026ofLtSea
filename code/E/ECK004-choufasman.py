@@ -37,6 +37,7 @@ from scipy import sparse
 from sklearn.metrics import f1_score
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 REL_DIR = os.path.join(PROJECT_ROOT, "rel")
@@ -230,7 +231,7 @@ def main():
               "prior_baseline": round(f1_pri, 4), "kmer_f1": round(f1_kmer, 4),
               "corr_cf_kmer": round(corr, 4), "top1_sim": round(float(top1), 4),
               "fusion_gain_vs_kmer": round(best_gain, 4), "best_lambda": best_l}
-    with open(f"{REL_DIR}/ECK004_report.json", "w", encoding="utf-8") as f:
+    with Path(f"{REL_DIR}/ECK004_report.json").open("w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print(f"  报告: {REL_DIR}/ECK004_report.json")
     print("=" * 60)

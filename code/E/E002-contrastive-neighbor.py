@@ -34,6 +34,7 @@ from sklearn.metrics import (f1_score, precision_score, recall_score,
                              roc_auc_score)
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
@@ -254,7 +255,7 @@ def main():
     if not gen_sub:
         np.savez_compressed(PROJ_PATH, proj_train=proj_train, proj_val=proj_val)
         report["submission"] = "none"
-        with open(REPORT_PATH, "w", encoding="utf-8") as f:
+        with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
             json.dump(report, f, ensure_ascii=False, indent=2)
         print(f"  投影嵌入缓存: {PROJ_PATH}")
         print(f"  报告: {REPORT_PATH}")
@@ -264,7 +265,7 @@ def main():
 
     if fusion[best_we] <= f1_kmer + 0.001:
         report["submission"] = "none (融合无增益)"
-        with open(REPORT_PATH, "w", encoding="utf-8") as f:
+        with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
             json.dump(report, f, ensure_ascii=False, indent=2)
         print("  融合无显著增益 → 不生成提交")
         print("=" * 60)
@@ -324,7 +325,7 @@ def main():
     submission = pd.concat([submission, label_df], axis=1)
     submission.to_csv(SUB_PATH, index=False)
     report["submission"] = SUB_PATH
-    with open(REPORT_PATH, "w", encoding="utf-8") as f:
+    with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print(f"  提交: {SUB_PATH} ({len(submission)} 行)")
     print(f"  报告: {REPORT_PATH}")

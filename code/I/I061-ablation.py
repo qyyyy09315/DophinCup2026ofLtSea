@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score
+from pathlib import Path
 
 PROJECT_ROOT = r"F:\FOR_PYTHON\project\26海豚杯"
 REL_DIR = os.path.join(PROJECT_ROOT, "rel")
@@ -225,7 +226,7 @@ def main():
         f1m = np.mean(np.where(2*tp+fp+fn > 0, 2*tp/np.maximum(2*tp+fp+fn,1), 0.0))
         print(f"{name:42s} | Miss F1 = {f1m:.4f}")
 
-    with open(os.path.join(REL_DIR, "I061_report.json"), "w", encoding="utf-8") as f:
+    with Path(os.path.join(REL_DIR, "I061_report.json")).open("w", encoding="utf-8") as f:
         json.dump({k: {"f1": v[0], "auc": v[1]} for k, v in results.items()}, f, indent=2)
     print(f"\nCompleted in {time.time()-t0:.1f}s")
 

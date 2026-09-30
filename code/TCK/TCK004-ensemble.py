@@ -20,6 +20,7 @@ import pandas as pd
 from sklearn.metrics import (f1_score, precision_score, recall_score,
                              accuracy_score, roc_auc_score)
 from sklearn.model_selection import train_test_split
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
@@ -169,7 +170,7 @@ def main():
         spec.loader.exec_module(rmod)
         rmodel = rmod.ProteinLSTM(n_labels=len(label_cols)).to(rmod.DEVICE)
         ck = torch.load(os.path.join(MODEL_DIR, "r001-bilstm.pt"),
-                        map_location=rmod.DEVICE, weights_only=False)
+                        map_location=rmod.DEVICE, weights_only=True)
         rmodel.load_state_dict(ck["state_dict"] if isinstance(ck, dict) and "state_dict" in ck else ck)
         rmodel.eval()
         val_ds = rmod.ProteinDataset(train_df["sequence"].values[idx_val],
@@ -240,7 +241,7 @@ def main():
     config = {"model": "tck004-ensemble", "base_w": BASE_W,
               "best_w_r": round(float(best_wr), 4), "thresholds": opt_thresholds.tolist(),
               "label_cols": label_cols}
-    with open(ENSEMBLE_CONFIG_PATH, "w", encoding="utf-8") as f:
+    with Path(ENSEMBLE_CONFIG_PATH).open("w", encoding="utf-8") as f:
         json.dump(config, f, ensure_ascii=False, indent=2)
     metrics = {"model": "tck004-ensemble", "best_w_r": round(float(best_wr), 4),
                "base_w": BASE_W,
@@ -251,7 +252,7 @@ def main():
                "val_total_positive_true": int(val_true.sum()),
                "val_total_positive_pred": int(y_val_pred.sum()),
                "total_time_seconds": round(time.time() - t0, 1)}
-    with open(METRICS_PATH, "w", encoding="utf-8") as f:
+    with Path(METRICS_PATH).open("w", encoding="utf-8") as f:
         json.dump(metrics, f, ensure_ascii=False, indent=2)
     print(f"  配置: {ENSEMBLE_CONFIG_PATH}, 指标: {METRICS_PATH}")
     print("=" * 60)

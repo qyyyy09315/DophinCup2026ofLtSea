@@ -40,6 +40,7 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 from transformers import EsmModel
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 REL_DIR = os.path.join(PROJECT_ROOT, "rel")
@@ -397,7 +398,7 @@ def main():
         report["submission"] = sub_path
         print(f"  提交: {sub_path}")
 
-    with open(os.path.join(REL_DIR, "E004a_report.json"), "w", encoding="utf-8") as f:
+    with Path(os.path.join(REL_DIR, "E004a_report.json")).open("w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print(f"  报告: {os.path.join(REL_DIR, 'E004a_report.json')}")
     print("=" * 60)

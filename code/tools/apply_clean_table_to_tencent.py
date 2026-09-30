@@ -21,8 +21,8 @@ clear_payload = {
     "start_col": 0,
     "end_col": 15
 }
-cmd_clear = f'mcporter call tencent-docs sheet.clear_range_cells --args "{json.dumps(clear_payload).replace(chr(34), chr(92)+chr(34))}"'
-p_clear = subprocess.run(cmd_clear, capture_output=True, text=True, encoding="utf-8", shell=True)
+cmd_clear = ["mcporter", "call", "tencent-docs", "sheet.clear_range_cells", "--args", json.dumps(clear_payload)]
+p_clear = subprocess.run(cmd_clear, capture_output=True, text=True, encoding="utf-8")
 print("Clear status:", "OK" if '"error": ""' in p_clear.stdout else p_clear.stdout[:200])
 
 # 2. 构造所有待写入的单元格列表 (Row 0..193)
@@ -67,9 +67,8 @@ for i in range(0, len(all_cell_items), batch_size):
         "sheet_id": SHEET_ID,
         "values": batch
     }
-    escaped_args = json.dumps(payload).replace('"', '\\"')
-    cmd = f'mcporter call tencent-docs sheet.set_range_value --args "{escaped_args}"'
-    p = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", shell=True)
+    cmd = ["mcporter", "call", "tencent-docs", "sheet.set_range_value", "--args", json.dumps(payload)]
+    p = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
     if '"error": ""' not in p.stdout:
         print(f"Error at batch {i}..{i+len(batch)}:", p.stdout[:200], p.stderr[:200])
     else:

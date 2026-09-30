@@ -8,6 +8,7 @@ import matplotlib.patches as patches
 from matplotlib.gridspec import GridSpec
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score
+from pathlib import Path
 
 # 确保科研专业英文字体优先，中文字体备选
 plt.rcParams['font.sans-serif'] = ['DejaVu Sans', 'Arial', 'SimHei', 'Microsoft YaHei']
@@ -211,7 +212,7 @@ for name, sc in models.items():
     results[name] = res
     print(f"  {name:18s} -> Macro F1: {res['macro_f1']:.4f} | AUC: {res['macro_auc']:.4f} | Hit: {res['hit_f1']:.4f} | Miss: {res['miss_f1']:.4f}")
 
-with open(os.path.join(FIG_DIR, "ablation_metrics.json"), "w", encoding="utf-8") as f:
+with Path(os.path.join(FIG_DIR, "ablation_metrics.json")).open("w", encoding="utf-8") as f:
     json.dump(results, f, indent=2)
 
 print("\n4. Generating High-Standard Scientific Figures...")

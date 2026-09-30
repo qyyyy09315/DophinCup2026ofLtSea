@@ -26,6 +26,7 @@ import pandas as pd
 import scipy.sparse as sp
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 REL_DIR = os.path.join(PROJECT_ROOT, "rel")
@@ -256,7 +257,7 @@ def main():
         "delta_vs_c011a": float(best_diff_f1 - 0.4453),
         "passed_gate": bool(best_diff_f1 >= 0.4453 + 0.001)
     }
-    with open(REPORT_PATH, "w", encoding="utf-8") as f:
+    with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
         json.dump(report_dict, f, indent=2)
     print(f"  Wrote report to {REPORT_PATH}")
     

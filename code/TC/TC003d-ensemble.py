@@ -21,6 +21,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import (f1_score, precision_score, recall_score,
                              accuracy_score, roc_auc_score)
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
@@ -175,7 +176,7 @@ def main():
         "thresholds": opt_thresholds.tolist(),
         "label_cols": label_cols,
     }
-    with open(ENSEMBLE_CONFIG_PATH, "w", encoding="utf-8") as f:
+    with Path(ENSEMBLE_CONFIG_PATH).open("w", encoding="utf-8") as f:
         json.dump(config, f, ensure_ascii=False, indent=2)
 
     metrics = {
@@ -199,7 +200,7 @@ def main():
         "val_pred_positive_ratio": round(y_val_pred.mean(), 6),
         "total_time_seconds": round(time.time() - t_start, 1),
     }
-    with open(METRICS_PATH, "w", encoding="utf-8") as f:
+    with Path(METRICS_PATH).open("w", encoding="utf-8") as f:
         json.dump(metrics, f, ensure_ascii=False, indent=2)
     print(f"  配置: {ENSEMBLE_CONFIG_PATH}, 指标: {METRICS_PATH}")
     print("=" * 60)

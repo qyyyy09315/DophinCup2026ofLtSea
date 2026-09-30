@@ -1,6 +1,7 @@
 import os, sys, time, json, re, subprocess
 import pandas as pd
 import numpy as np
+from pathlib import Path
 
 PROJECT_ROOT = r"F:\FOR_PYTHON\project\26海豚杯"
 TMP_DIR = os.path.join(PROJECT_ROOT, "tmp")
@@ -112,7 +113,7 @@ print(f"Constructed clean table with {len(reconstructed_table)} rows (Header + 1
 print(f"Last row: {reconstructed_table[-1][0]} | {reconstructed_table[-1][1][:25]} | F1={reconstructed_table[-1][5]}")
 
 # 4. 保存为本地 JSON
-with open(os.path.join(TMP_DIR, "clean_tencent_table.json"), "w", encoding="utf-8") as f:
+with Path(os.path.join(TMP_DIR, "clean_tencent_table.json")).open("w", encoding="utf-8") as f:
     json.dump(reconstructed_table, f, ensure_ascii=False, indent=2)
 
 print(f"Saved clean table structure to tmp/clean_tencent_table.json")

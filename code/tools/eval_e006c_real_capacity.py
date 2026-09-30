@@ -32,7 +32,7 @@ va_loader = torch.utils.data.DataLoader(va_ds, batch_size=16, shuffle=False, num
 print("2. Loading E006c checkpoint...")
 base = e006c.load_esm()
 model, _, _ = e006c.attach_lora(base, e006c.FREEZE_FIRST)
-ckpt = torch.load(e006c.BEST_PATH, map_location="cuda", weights_only=False)
+ckpt = torch.load(e006c.BEST_PATH, map_location="cuda", weights_only=True)
 model.load_state_dict(ckpt["state_dict"])
 model = model.cuda().eval()
 

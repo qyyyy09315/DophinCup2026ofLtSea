@@ -27,6 +27,7 @@ import pandas as pd
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
@@ -334,7 +335,7 @@ def main():
         "oof_grid": oof_rows,
         "seconds": round(time.time() - t0, 1),
     }
-    with open(REPORT_PATH, "w", encoding="utf-8") as f:
+    with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print(f"  报告: {REPORT_PATH}")
 
@@ -379,7 +380,7 @@ def main():
         report["submission"] = sub_path
         report["submit_k"] = k_s
         report["submit_beta"] = b_s
-        with open(REPORT_PATH, "w", encoding="utf-8") as f:
+        with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
             json.dump(report, f, ensure_ascii=False, indent=2)
         print(f"  提交: {sub_path} ({len(sub)} 行, k={k_s} β={b_s})")
     print("=" * 60)

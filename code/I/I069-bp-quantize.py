@@ -31,6 +31,7 @@ SIZE_LIMIT_MB = 50.0
 N_BINS = 4      # 低侧级数 (0.1..0.4); 高侧为 N_BINS+1 (0.5..0.9)
 
 from importlib.machinery import SourceFileLoader
+from pathlib import Path
 i66c = SourceFileLoader("i66c", os.path.join(PROJECT_ROOT, "code", "I", "I066c-linear-calibration.py")).load_module()
 
 
@@ -181,7 +182,7 @@ def main():
             cells.append(s[1:] if s.startswith("0.") else s)
         lines.append(str(pids[i]) + "," + ",".join(cells))
     out = os.path.join(SUB_DIR, "submission_I069_bp_quant.csv")
-    with open(out, "w", encoding="utf-8", newline="") as f:
+    with Path(out).open("w", encoding="utf-8", newline="") as f:
         f.write("\n".join(lines) + "\n")
     mb = os.path.getsize(out) / 1024 / 1024
     print(f"  {out}")
@@ -196,7 +197,7 @@ def main():
 
     rep = {"auc_ref": auc_ref, "f1_ref": f1_ref, "variants": {str(k): v for k, v in variants.items()},
            "chosen_bins": chosen_bins, "size_mb": mb}
-    with open(REPORT, "w", encoding="utf-8") as f:
+    with Path(REPORT).open("w", encoding="utf-8") as f:
         json.dump(rep, f, indent=2, ensure_ascii=False)
     print(f"\n  Report: {REPORT}")
     print(f"Completed in {time.time()-t0:.1f}s")

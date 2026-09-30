@@ -29,6 +29,7 @@ from sklearn.metrics import (f1_score, precision_score, recall_score,
                              roc_auc_score)
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
@@ -187,7 +188,7 @@ def main():
         "baseline_tc003e": {"macro_f1": 0.2846, "auc": 0.7969},
         "total_time_seconds": round(time.time() - t0, 1),
     }
-    with open(OUT_PATH, "w", encoding="utf-8") as f:
+    with Path(OUT_PATH).open("w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=2)
     print(f"    结果: {OUT_PATH}")
     print("=" * 60)

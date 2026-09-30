@@ -35,6 +35,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score, roc_auc_score
 from tqdm import tqdm
 from scipy import sparse
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 REL_DIR = os.path.join(PROJECT_ROOT, "rel")
@@ -242,7 +243,7 @@ def main():
     if not gen_sub or gain <= 0.001:
         if gain <= 0.001:
             report["submission"] = "none (无增益)"
-        with open(f"{REL_DIR}/ECK003_report.json", "w", encoding="utf-8") as f:
+        with Path(f"{REL_DIR}/ECK003_report.json").open("w", encoding="utf-8") as f:
             json.dump(report, f, ensure_ascii=False, indent=2)
         print(f"  报告: {REL_DIR}/ECK003_report.json")
         print("=" * 60)
@@ -252,7 +253,7 @@ def main():
     print("[6/6] test 端二跳 + 提交...")
     print("  (未实现 test 端, 需全量 train 邻居传播)")
     report["submission"] = "test 端待补"
-    with open(f"{REL_DIR}/ECK003_report.json", "w", encoding="utf-8") as f:
+    with Path(f"{REL_DIR}/ECK003_report.json").open("w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print("=" * 60)
     print(f"完成! 总耗时: {time.time() - t0:.0f}s")

@@ -64,6 +64,7 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 from numpy.lib import format as npformat
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 REL_DIR = os.path.join(PROJECT_ROOT, "rel")
@@ -206,7 +207,7 @@ def read_progress(P):
 
 def write_progress(P, state):
     tmp = P["prog"] + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
+    with Path(tmp).open("w", encoding="utf-8") as f:
         json.dump(state, f, ensure_ascii=False)
     os.replace(tmp, P["prog"])
 
@@ -587,7 +588,7 @@ def main():
                 "n_test": total - n_train, "file_rows": file_rows, "fingerprint": fp,
                 "max_len": MAX_LEN, "shapes": {k: list(v) for k, v in shapes.items()},
                 "elapsed_min": round((time.time() - t0) / 60, 1)}
-        with open(meta_path, "w", encoding="utf-8") as f:
+        with Path(meta_path).open("w", encoding="utf-8") as f:
             json.dump(meta, f, indent=2, ensure_ascii=False)
         release_mm(mm_last, mm_last3)
         remove_quiet(P["mm_last"], P["mm_last3"], P["prog"], P["prog"] + ".tmp",

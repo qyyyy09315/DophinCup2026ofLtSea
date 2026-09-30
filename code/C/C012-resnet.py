@@ -38,6 +38,7 @@ import torch.nn as nn
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+from pathlib import Path
 
 SRC = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(os.path.dirname(SRC))
@@ -419,7 +420,7 @@ def main():
         report["submit_alpha"] = alpha
         print(f"  提交: {sub_path}")
 
-    with open(REPORT_PATH, "w", encoding="utf-8") as f:
+    with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print(f"  报告: {REPORT_PATH}")
     print(f"  概率: {PROBS_PATH}")

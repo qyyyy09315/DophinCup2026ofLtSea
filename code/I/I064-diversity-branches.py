@@ -17,6 +17,7 @@ import torch.nn as nn
 from torch.utils.data import TensorDataset, DataLoader
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score
+from pathlib import Path
 
 PROJECT_ROOT = r"F:\FOR_PYTHON\project\26海豚杯"
 REL_DIR = os.path.join(PROJECT_ROOT, "rel")
@@ -292,7 +293,7 @@ def main():
     print(f"  BEST: {best_cfg} -> {res[best_cfg]:.4f}")
     print("=" * 72)
 
-    with open(os.path.join(REL_DIR, "I064_report.json"), "w", encoding="utf-8") as f:
+    with Path(os.path.join(REL_DIR, "I064_report.json")).open("w", encoding="utf-8") as f:
         json.dump({"results": res, "best_config": best_cfg, "best_f1": res[best_cfg]}, f, indent=2)
     print(f"\nCompleted in {time.time()-t0:.1f}s")
 

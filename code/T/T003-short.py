@@ -41,6 +41,7 @@ import torch.nn as nn
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+from pathlib import Path
 
 SRC = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(os.path.dirname(SRC))
@@ -174,7 +175,7 @@ def train_short(model, train_loader, val_loader, y_val_short, pos_weight):
     if RESUME:
         if not os.path.exists(MODEL_PATH):
             raise FileNotFoundError(MODEL_PATH)
-        ckpt = torch.load(MODEL_PATH, map_location=DEVICE, weights_only=False)
+        ckpt = torch.load(MODEL_PATH, map_location=DEVICE, weights_only=True)
         state = ckpt["state_dict"] if isinstance(ckpt, dict) and "state_dict" in ckpt else ckpt
         model.load_state_dict(state)
         best_f1 = float(ckpt.get("best_f1", 0.0)) if isinstance(ckpt, dict) else 0.0
@@ -473,7 +474,7 @@ def main():
         report["submit_alpha"] = alpha
         print(f"  提交: {sub_path}")
 
-    with open(REPORT_PATH, "w", encoding="utf-8") as f:
+    with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print(f"  报告: {REPORT_PATH}")
     print(f"  概率: {PROBS_PATH}")

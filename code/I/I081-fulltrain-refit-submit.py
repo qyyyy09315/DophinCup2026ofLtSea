@@ -21,6 +21,7 @@ import torch.nn as nn
 from importlib.machinery import SourceFileLoader
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
+from pathlib import Path
 
 PROJECT_ROOT = r"F:\FOR_PYTHON\project\26海豚杯"
 REL_DIR = os.path.join(PROJECT_ROOT, "rel")
@@ -300,7 +301,7 @@ def main():
     rep = {"val_f1_check": val_f1, "w_plm": W_PLM, "seeds": SEEDS,
            "test_2hop_rescued": n_rescued, "size_mb": mb,
            "pred_card_mean": float(y_pred.sum(1).mean()), "total_pos": int(y_pred.sum())}
-    with open(os.path.join(REL_DIR, "I081_report.json"), "w", encoding="utf-8") as f:
+    with Path(os.path.join(REL_DIR, "I081_report.json")).open("w", encoding="utf-8") as f:
         json.dump(rep, f, indent=2)
     print(f"\nCompleted in {(time.time() - t0) / 60:.1f} min")
 

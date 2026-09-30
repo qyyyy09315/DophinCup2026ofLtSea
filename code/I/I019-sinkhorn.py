@@ -30,6 +30,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 _spec = importlib.util.spec_from_file_location(
@@ -163,7 +164,7 @@ def main():
         "oof_grid": oof_rows,
         "seconds": round(time.time() - t0, 1),
     }
-    with open(REPORT_PATH, "w", encoding="utf-8") as f:
+    with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print(f"  报告: {REPORT_PATH}")
 
@@ -215,7 +216,7 @@ def main():
         report["submit_tau"] = tau
         report["submit_rho"] = rho
         report["submit_alpha"] = alpha
-        with open(REPORT_PATH, "w", encoding="utf-8") as f:
+        with Path(REPORT_PATH).open("w", encoding="utf-8") as f:
             json.dump(report, f, ensure_ascii=False, indent=2)
         print(f"  提交: {sub_path} ({len(sub)} 行)")
     print("=" * 60)

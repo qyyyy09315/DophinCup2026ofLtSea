@@ -19,6 +19,7 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
 from sklearn.model_selection import train_test_split
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
@@ -228,7 +229,7 @@ def main():
         "val_total_positive_pred": int(total_pos_pred),
         "val_pred_positive_ratio": round(y_val_pred.mean(), 6),
     }
-    with open(METRICS_PATH, "w", encoding="utf-8") as f:
+    with Path(METRICS_PATH).open("w", encoding="utf-8") as f:
         json.dump(metrics, f, ensure_ascii=False, indent=2)
     print(f"  指标文件: {METRICS_PATH}")
 
