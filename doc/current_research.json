@@ -25,5 +25,17 @@
     "cmat_gate_passed": false,
     "is_fresh_model_oof": false
   },
+  "latest_literature": {
+    "date": "2026-10-12",
+    "round": 164,
+    "report": "doc/日志/广泛文献调研与下一步研究-I130-20261012.md",
+    "core_records": 54,
+    "unique_core_sources": 53,
+    "count_note": "Includes official resources and partial-text records; not 53 full-text papers; five supplemental items outside the core register",
+    "source_inventory": "sources/literature-20261012/source_inventory.json",
+    "next_priorities": ["label-wise homology reliability diagnosis", "nonoverlapping 650M sequence coverage paired probe"],
+    "new_training_executed": false,
+    "candidate_gain_proven": false
+  },
   "external_document_sync": "deferred by user; do not operate Tencent Docs during setup"
 }
