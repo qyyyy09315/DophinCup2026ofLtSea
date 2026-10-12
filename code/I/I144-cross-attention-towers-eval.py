@@ -10,8 +10,9 @@ I144 — 跨模态多头交叉注意力融合塔 (Cross-Modal Cross-Attention To
   2. 实测结果:
      - CMAT 单模型三种子 SWA: microAUC = 0.8828 (相比 DMT-v1 的 0.8815 进一步提升 +0.0013！)；
      - 六元解耦融合 (Hexa-Blend: Quad 0.70 + DMT 0.15 + CMAT 0.15):
-       microAUC 达到 0.8949 (刷新历史最高纪录！)；
-     - 接入 SOTA 全流程管线，执行 R=20 重复半折配对检验。
+       microAUC = 0.8952，但全流程 F1 0.45118 低于 Penta 的 0.45125；
+     - 原报告 R=20 平均差 -0.00002、胜率 0.40；该胜率不是独立 OOF 显著性。
+     - 2026-10-12 两级阈值交叉拟合复核：Hexa 较 Penta -0.00023273，当前配方不换锁。
 """
 
 import os
@@ -295,7 +296,10 @@ def main():
             "mean_penta_f1": round(float(np.mean(f1_pentas)), 5),
         },
         "elapsed_seconds": elapsed,
-        "verdict": "跨模态交叉注意力融合使单模型 microAUC 达 0.8828 (+0.0013)，六元融合全流程 R=20 配对保持稳健正向 (+0.00008, P=0.75)",
+        "verdict": (f"CMAT 单模型 microAUC={u_cmat:.4f}，六元融合 microAUC={u_hexa:.4f}；"
+                    f"全流程 F1 差={f1_hexa - f1_penta:+.5f}；"
+                    f"R=20 重复半样本平均差={mean_delta:+.5f}、胜率={p_gt0:.2f}；"
+                    "胜率不等同独立 OOF 显著性，方法准入以完整融合 Macro F1 为准"),
     }
 
     with Path(REPORT_PATH).open("w", encoding="utf-8") as f:

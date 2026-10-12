@@ -132,7 +132,7 @@ def main():
     final_v = (1.0 - SINK_ALPHA) * s_v + SINK_ALPHA * p_v
     opt_ths = search_scut(final_v, y_va)
     f1_val = macro_f1(final_v, y_va, opt_ths)
-    print(f"  [验证集集大成标定完成] 标定 val F1 = {f1_val:.5f} (突破 0.4524！) | t_tmp 均值 {t_tmp.mean():.4f}")
+    print(f"  [验证集集大成标定完成] 标定 val F1 = {f1_val:.5f} | t_tmp 均值 {t_tmp.mean():.4f}")
 
     # 3. 汇聚测试集 100% 全量 Deep4 与 Penta-DMT
     print("\n[2/5] 加载测试集 100% 全量 Deep4 与 Penta-DMT (0.8948 microAUC)...")

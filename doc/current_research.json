@@ -1,0 +1,29 @@
+{
+  "current_research": "I130@c45f8b527f8f2c4e47f5f7566571a767848d00e4",
+  "updated_at": "2026-10-12",
+  "timezone": "Asia/Shanghai",
+  "task_family": "multi-label protein function prediction",
+  "dataset": {"train_rows": 113796, "test_rows": 28450, "labels": 500},
+  "source_commit": "c45f8b527f8f2c4e47f5f7566571a767848d00e4",
+  "submission": {
+    "path": "submit/submission_I130_master.csv",
+    "sha256": "175003b786e463b8f059cca89588f302a4909c9b57f8187d43238aa1ac6b8bca",
+    "platform_score": 46.2674,
+    "platform_auc": 0.720107,
+    "source": "User-provided platform result in this chat on 2026-10-12"
+  },
+  "previous_lock": {"experiment": "I121", "platform_score": 46.1881, "platform_auc": 0.719743},
+  "local_reference": {"path": "rel/I130_report.json", "macro_f1": 0.45125, "protocol": "same-set SCut calibration on fixed 80/20 seed-42 validation"},
+  "latest_analysis": {
+    "command": ".venv/Scripts/python.exe -u code/tools/audit_i130_calibration.py",
+    "report": "rel/i130_calibration_audit_20261012/report.json",
+    "kind": "conditional two-stage threshold cross-fitting on fixed cached models",
+    "penta_macro_f1": 0.44360462510619697,
+    "hexa_macro_f1": 0.4433718929779551,
+    "hexa_delta": -0.00023273212824187484,
+    "hexa_winning_folds": 1,
+    "cmat_gate_passed": false,
+    "is_fresh_model_oof": false
+  },
+  "external_document_sync": "deferred by user; do not operate Tencent Docs during setup"
+}
