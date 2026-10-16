@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="430" viewBox="0 0 1600 430" role="img" aria-labelledby="title desc">
+  <title id="title">Light The Sea — Protein Function Prediction</title>
+  <desc id="desc">深海蓝背景、青色序列曲线与点阵，展示点燃大海团队的蛋白质功能预测研究。</desc>
+  <defs>
+    <linearGradient id="sea" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#071d30"/><stop offset="1" stop-color="#0a3c49"/></linearGradient>
+    <linearGradient id="strand" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#39b8b5" stop-opacity="0"/><stop offset=".45" stop-color="#62e4d3"/><stop offset="1" stop-color="#b1f5e5"/></linearGradient>
+    <radialGradient id="glow"><stop stop-color="#21c9b8" stop-opacity=".2"/><stop offset="1" stop-color="#21c9b8" stop-opacity="0"/></radialGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#87d7d5" opacity=".13"/></pattern>
+  </defs>
+  <rect width="1600" height="430" rx="22" fill="url(#sea)"/>
+  <rect width="1600" height="430" rx="22" fill="url(#grid)"/>
+  <ellipse cx="1260" cy="220" rx="370" ry="300" fill="url(#glow)"/>
+  <path d="M930 113 C1020 113 1040 305 1130 305 S1240 113 1330 113 S1440 305 1530 305" fill="none" stroke="url(#strand)" stroke-width="4"/>
+  <path d="M930 305 C1020 305 1040 113 1130 113 S1240 305 1330 305 S1440 113 1530 113" fill="none" stroke="url(#strand)" stroke-width="2" opacity=".55"/>
+  <g stroke="#8be7d7" stroke-width="1.4" opacity=".28">
+    <path d="M1010 179V240 M1050 250V170 M1090 294V124 M1130 305V113 M1170 294V124 M1210 250V170 M1250 179V240 M1290 124V294 M1330 113V305 M1370 124V294 M1410 170V250 M1450 240V179 M1490 294V124"/>
+  </g>
+  <g fill="#a6f6e1"><circle cx="1130" cy="305" r="6"/><circle cx="1330" cy="113" r="6"/><circle cx="1530" cy="305" r="6"/></g>
+  <rect x="74" y="75" width="44" height="4" rx="2" fill="#6ce1cb"/>
+  <g font-family="Segoe UI, Arial, sans-serif">
+    <text x="74" y="119" fill="#9fc8cc" font-size="17" letter-spacing="5">2026 DOLPHIN CUP</text>
+    <text x="70" y="211" fill="#f2fbfa" font-size="76" font-weight="700" letter-spacing="1">LIGHT THE SEA</text>
+    <text x="76" y="258" fill="#b5dbdc" font-size="23" letter-spacing="3">PROTEIN FUNCTION PREDICTION</text>
+    <path d="M76 299H840" stroke="#94d4d0" stroke-opacity=".22"/>
+    <text x="76" y="340" fill="#70dfca" font-size="15" letter-spacing="2">SEQUENCE</text>
+    <text x="235" y="340" fill="#648e98" font-size="18">/</text>
+    <text x="275" y="340" fill="#70dfca" font-size="15" letter-spacing="2">REPRESENTATION</text>
+    <text x="508" y="340" fill="#648e98" font-size="18">/</text>
+    <text x="548" y="340" fill="#70dfca" font-size="15" letter-spacing="2">HOMOLOGY</text>
+    <text x="712" y="340" fill="#648e98" font-size="18">/</text>
+    <text x="752" y="340" fill="#70dfca" font-size="15" letter-spacing="2">FUSION</text>
+    <text x="1525" y="378" fill="#7eb3ba" font-size="13" letter-spacing="2" text-anchor="end">LIGHT THE SEA · RESEARCH REPOSITORY</text>
+  </g>
+</svg>
